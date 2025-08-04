@@ -1,0 +1,627 @@
+---
+title: "simulation"
+author: "Celia Muñoz Fernández"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Loading libraries
+
+```{r}
+# libraries 
+library(tidyverse)
+library(stringr)
+library(readxl)
+library(simmer)
+library(simmer.plot)
+library(purrr)
+```
+
+## Sourcing functions
+
+```{r}
+# environment
+source("./functions.R")
+path <- "./data"
+```
+
+## Loading data
+
+```{r}
+# obtaining data
+list_data <- obtain_data(path)
+```
+
+### Population data
+
+```{r}
+# Loading population data assigned to each health area, by age and sex
+
+population <- list_data[["pob-asignada-siap"]] %>% 
+  rename(
+    year = AÒo,                         # Year of observation
+    area = "¡rea de salud",             # Health area name
+    age_group = "Grupos Quinquenales",  # Age group (quinquennial)
+    sex = Sexo,                         # Sex (coded)
+    population = "N˙mero"               # Population count
+  ) %>%
+  mutate(
+    # Cleaning area names by removing prefix like "Area I: ..."
+    area = str_sub(area, str_locate(area, ":")[1] + 2, str_length(area)),
+
+    # Fixing some known encoding issues and recode specific age ranges
+    age_group = case_when(
+      age_group == "45905" ~ "5-9",
+      age_group == "41913" ~ "10-14",
+      age_group == "95 y m·s" ~ "95+",
+      TRUE ~ age_group
+    ),
+
+    # Recoding sex to numeric: 1 = Male, 2 = Female
+    sex = if_else(sex == "VarÛn", 0, 1)
+  ) %>%
+  dplyr::select(year, area, age_group, sex, population)
+```
+
+### Consultations
+
+```{r}
+# Loading and cleaning primary care consultation records from SIAP
+
+consultations <- list_data[["visitas-siap"]] %>%
+  rename(
+    year = AÒo,                         # Year of observation
+    area = "¡rea de salud",             # Health area name
+    age_group = "Grupos Quinquenales",  # Age group (quinquennial)
+    professional_type = Profesional,    # Professional type (GP, pediatrician, nurse)
+    modality = Lugar,                   # Place/type of consultation (center, home, teleconsultation)
+    n_consultations = Consultas         # Number of consultations
+  ) %>%
+  mutate(
+    # Cleaning area names (remove prefix "Área X: ")
+    area = str_remove(area, "^[^:]+: "),
+
+    # Fixing codification errors in age groups
+    age_group = case_when(
+      age_group == "45905" ~ "5-9",
+      age_group == "41913" ~ "10-14",
+      age_group == "95 y m·s" ~ "95+",
+      age_group == "Sin informar" ~ NA,
+      TRUE ~ age_group
+    ),
+
+    n_consultations = as.numeric(n_consultations),
+
+    # Recoding professional type
+    professional_type = recode(professional_type,
+                          "Medicina de familia" = "GP",
+                          "PediatrÌa" = "Pediatrician",
+                          "EnfermerÌa" = "Nurse"),
+
+    # Recoding consultation modality
+    modality = recode(modality,
+                      "Centro" = "In-person",        
+                      "Teleconsulta" = "Remote",  
+                      "Domicilio" = "Home")     
+  ) %>%
+  filter(!is.na(professional_type),
+         !is.na(age_group)) %>%
+  dplyr::select(year, area, age_group, professional_type, modality, n_consultations) %>%
+
+  # Fill in all missing combinations with 0 consultations
+  complete(year, area, age_group, professional_type, modality,
+           fill = list(n_consultations = 0))
+```
+
+
+### Emergencies
+
+```{r}
+# Loading and cleaning primary care emergency consultations
+
+emergencies <- list_data[["urgencias-siap"]] %>%
+  rename(
+    year = AÒo,                         # Year of observation
+    area = "¡rea de salud",             # Health area name
+    age_group = "Grupos Quinquenales",  # Age group (quinquennial)
+    n_emerg = "Atendidas por Medicina"  # Number of emergencies
+  ) %>%
+  mutate(
+    # Cleaning area names (remove prefix "Área X: ")
+    area = str_remove(area, "^[^:]+: "),
+
+    # Fixing codification errors in age groups
+    age_group = case_when(
+      age_group == "45905" ~ "5-9",
+      age_group == "41913" ~ "10-14",
+      age_group == "95 y m·s" ~ "95+",
+      age_group == "Sin informar" ~ NA,
+      TRUE ~ age_group
+    ),
+
+    n_emerg = as.numeric(n_emerg)
+  ) %>%
+  filter(!is.na(age_group)) %>%
+  dplyr::select(year, area, age_group, n_emerg) %>%
+
+  # Fill in all missing combinations with 0 consultations
+  complete(year, area, age_group,
+           fill = list(n_emerg = 0))
+```
+
+
+### Number of primary care centres
+
+```{r}
+# Loading and cleaning data on the number of primary care centers by area and type
+
+primary_care_centers <- list_data[["centros-siap"]] %>%
+  rename(
+    year = AÒo,                           # Year of observation
+    area = "¡rea de salud",               # Health area name
+    center_type = "Tipo de centro",       # Type of center (health center or local clinic)
+    n_centers = "N∫ de centros"           # Number of centers
+  ) %>%
+  mutate(
+    # Cleaning area names (remove prefix like "Área X: ")
+    area = str_remove(area, "^[^:]+: "),
+
+    # Ensuring number of centers is numeric
+    n_centers = as.numeric(n_centers),
+
+    # Recoing center types
+    center_type = recode(center_type,
+                         "Centros de salud" = 1,      # Health center
+                         "Consultorios locales" = 2) # Local clinic
+  ) %>%
+  dplyr::select(year, area, center_type, n_centers)
+
+primary_care_centers |> 
+  mutate(sum(n_centers))
+```
+
+### Number of professionals
+
+```{r}
+source("./scrapping_professionals.R")
+
+professionals <- professionals_scrap |> 
+  # nornalizamos nombres y áreas
+  mutate(
+    professional_type = case_when(
+      str_detect(professional_type, "Médico") ~ "GP",
+      str_detect(professional_type, "Pediatra") ~ "Pediatrician",
+      str_detect(professional_type, "Enfermería") ~ "Nurse",
+      TRUE ~ NA_character_
+    ),
+    area = case_when(
+      area_id == 1 ~ "Murcia Oeste",
+      area_id == 2 ~ "Cartagena",
+      area_id == 3 ~ "Lorca",
+      area_id == 4 ~ "Noroeste",
+      area_id == 5 ~ "Altiplano",
+      area_id == 6 ~ "Vega media del Segura",
+      area_id == 7 ~ "Murcia Este",
+      area_id == 8 ~ "Mar Menor",
+      area_id == 9 ~ "Vega Alta del Segura"
+    )
+  ) |> 
+  filter(!is.na(professional_type)) |> 
+  
+  # imputamos horas semanales
+  mutate(week_hours = week_hours(schedule)) |> 
+  group_by(center_id) |> 
+  mutate(
+    mean_center = mean(week_hours[week_hours > 0], na.rm = TRUE),
+    week_hours = ifelse(week_hours <= 0 | is.na(week_hours), mean_center, week_hours)
+  ) |> 
+  ungroup() |> 
+  group_by(professional_type) |> 
+  mutate(
+    mean_type = mean(week_hours, na.rm = TRUE),
+    week_hours = ifelse(is.na(week_hours), mean_type, week_hours)
+  ) |> 
+  ungroup() |> 
+  
+  # totales y pesos
+  group_by(area, center_id, professional_type) |> 
+  summarise(total_hours = sum(week_hours), .groups = "drop") |> 
+  group_by(area, professional_type) |> 
+  mutate(total_area_hours = sum(total_hours)) |> 
+  ungroup() |> 
+  mutate(weight = total_hours / total_area_hours)
+``` 
+
+### Consultations per professional (ordinary and emergency)
+
+```{r}
+ord_consultations_center <- consultations |> 
+  # calculating daily consultations per area and professional type
+  mutate(day_consultations = round(n_consultations / 250),
+         priority = 1) %>%
+  
+  # merging with the weight by center
+  left_join(professionals, by = c("area", "professional_type")) %>%
+  
+  # distributing consultations based on weight
+  mutate(day_consultations_center = round(day_consultations * weight)) %>%
+  
+  # revoming zeros or missings
+  filter(day_consultations_center > 0 & !is.na(day_consultations_center))
+
+
+emerg_consultations_center <- emergencies |> 
+  # calculating daily emergency consultations per area and professional type
+  mutate(day_consultations = round(n_emerg / 250),
+         modality = "In-person",
+         priority = 0) |> 
+
+  # merging with the weight by center
+  left_join(professionals |> 
+              filter(professional_type == "GP"), 
+            by = c("area")) |> 
+  # distributing emergency consultations based on weight
+  mutate(day_consultations_center = round(day_consultations * weight)) |> 
+  
+  # revoming zeros or missings
+  filter(day_consultations_center > 0 &
+           !is.na(day_consultations_center)) |> 
+  dplyr::select(-n_emerg)
+```
+
+
+### Generating arrivals for simulation
+
+```{r}
+# generating arrivals (ordinary consultations)
+set.seed(123)  # para reproducibilidad
+
+llegadas <- bind_rows(ord_consultations_center,
+                      emerg_consultations_center) |> 
+  rowwise() %>%
+  mutate(
+    arrival_time = list(sort(runif(day_consultations_center, 0, 420))),
+    age = list(floor(map_dbl(seq_len(day_consultations_center), ~ random_age(age_group)))),
+    year = list(rep(year, day_consultations_center)),
+    area = list(rep(area, day_consultations_center)),
+    professional_type = list(rep(professional_type, day_consultations_center)),
+    age_group = list(rep(age_group, day_consultations_center)),
+    center_id = list(rep(as.numeric(center_id), day_consultations_center)),
+    modality = list(rep(modality, day_consultations_center)),
+    priority = list(rep(priority, day_consultations_center))
+  ) %>%
+  unnest(c(year, area, center_id, arrival_time, priority, modality, professional_type, age, age_group)) %>%
+  ungroup() |> 
+  arrange(year, area, center_id, arrival_time) |> 
+  mutate(id = row_number()) 
+
+```
+
+
+
+### Simulation
+
+```{r}
+# creating environment
+env <- simmer("Murcia")
+
+# defining ordinary trajectory function according time
+make_traj_factory <- function(year, center_id, prof_type, age, modality, priority, sigma = 0.3) {
+  mu <- 12
+  if (prof_type == "GP" && age >= 65) mu <- mu + 5
+  if (prof_type == "Pediatrician" && age < 1) mu <- mu + 5
+  if (modality == "Remote") mu <- pmax(mu - 5, 2)
+  if (modality == "Home") mu <- mu * 2
+
+  meanlog <- log(mu) - 0.5 * sigma^2
+  sdlog <- sigma 
+  
+  traj_name <- paste("traj", center_id, prof_type, sep = "_")
+  
+  trajectory(traj_name) %>%
+    
+    set_attribute("year", year) |> 
+    set_attribute("center_id", center_id) %>%
+    set_attribute("modality", match(modality, c("In-person", "Remote", "Home"))) %>%
+    set_attribute("age", age) %>%
+    set_attribute("professional_type", match(prof_type, c("GP", "Nurse", "Pediatrician"))) |> 
+    seize(paste(center_id, prof_type, sep = "_"), 1, priority = priority) %>%
+    simmer::timeout(function() rlnorm(1, meanlog = meanlog, sdlog = sdlog)) %>% 
+    release(paste(center_id, prof_type, sep = "_"), 1)
+}
+
+
+# adding resources
+pwalk(
+  professionals |> 
+    mutate(capacity = pmax(1, round(total_hours / 37.5))),
+  function(center_id, professional_type, capacity, ...) {
+    resource_name <- paste(center_id, professional_type, sep = "_")
+    env <<- add_resource(env, resource_name, capacity)
+  }
+)
+
+# patient generation
+
+pwalk(
+  llegadas |> 
+    dplyr::select(id, year, center_id, priority, professional_type, age, modality, arrival_time),
+  function(id, year, center_id, priority, professional_type, age, modality, arrival_time, ...) {
+    gen_name <- paste0("p_", id)
+
+    env <<- add_generator(
+      env,
+      name_prefix = gen_name,
+      trajectory = make_traj_factory(year, center_id, professional_type, age, modality, priority),
+      distribution = at(arrival_time),
+      mon = 2
+    )
+  }
+)
+
+# running simulation for 420 minutes (7 hours) 
+invisible(env %>% run(until = 420))
+
+```
+
+
+
+
+### Results
+
+```{r}
+resources <- get_mon_resources(env) |> 
+  mutate(center_id = str_extract(resource, "^\\d+"),
+         professional_type = str_extract(resource, "(?<=_).*")) |> 
+  left_join(professionals |> 
+              dplyr::select(area, center_id),
+            by = "center_id") |> 
+  write_csv("./data/resources.csv")
+
+
+attributes <- get_mon_attributes(env) |> 
+  pivot_wider(names_from = "key",
+              values_from = "value") |> 
+  mutate(id = as.numeric(str_remove(name, "^p_")),
+         id = id/10) |> # eliminamos el 0 que sobra al final
+  left_join(llegadas |> 
+              dplyr::select(id, area, center_id),
+            by = c("id", "center_id")) |> 
+  write_csv("./data/attributes.csv")
+
+
+arrivals <- get_mon_arrivals(env) |> 
+  mutate(id = as.numeric(str_remove(name, "^p_")),
+         id = id/10) |> # eliminamos el 0 que sobra al final
+  arrange(id) |> 
+  left_join(llegadas |> 
+              dplyr::select(id, area, year, center_id, professional_type),
+            by = c("id")) |> 
+  write_csv("./data/arrivals.csv")
+```
+
+```{r}
+# composición de pacientes simulados
+
+attributes_summary <- attributes %>%
+  mutate(
+    modality = factor(modality, levels = 1:3, labels = c("In-person", "Remote", "Home")),
+    age_group = case_when(
+      age < 15 ~ "0–14",
+      age >= 15 & age < 65 ~ "15–64",
+      age >= 65 ~ "65+"
+    )
+  )
+
+# Número de pacientes por modalidad y área
+modality_area <- attributes_summary %>%
+  group_by(area, modality) %>%
+  summarise(n = n(), .groups = "drop") |> 
+  ggplot(aes(x = area, y = n, fill = modality)) +
+  geom_col(position = "fill") +
+  coord_flip() +
+  scale_fill_manual(
+  values = c(
+    "In-person" = "#F6C141",       
+    "Remote" = "#C93E3C",      
+    "Home" = "#6C2167"
+  )) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Distribution of care modalities by area",
+       y = "Healthcare area",
+       fill = "Modality") +
+  theme_minimal()
+
+
+age_area <- attributes_summary %>%
+  group_by(area, age_group) %>%
+  summarise(n = n(), .groups = "drop") |> 
+  ggplot(aes(x = area, y = n, fill = age_group)) +
+  geom_col(position = "fill") +
+  scale_fill_manual(
+  values = c(
+    "0–14" = "#F6C141",       
+    "15–64" = "#C93E3C",      
+    "65+" = "#6C2167"
+  )) +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Distribution of age groups by area",
+       y = "Healthcare area",
+       fill = "Age group") +
+  theme_minimal()
+
+ggsave("./figs/fig_modality_area.png", modality_area, width = 10, height = 6, dpi = 300)
+ggsave("./figs/fig_age_area.png", age_area, width = 10, height = 6, dpi = 300)
+
+```
+
+
+
+```{r}
+# Tiempo de espera por área y centro
+
+heatmap <- arrivals %>%
+  mutate(
+    waiting_time = end_time - start_time - activity_time
+  ) %>%
+  group_by(year, area, center_id) %>%
+  summarise(
+    n = n(),
+    median_wait = median(waiting_time, na.rm = TRUE),
+    p25 = quantile(waiting_time, 0.25, na.rm = TRUE),
+    p75 = quantile(waiting_time, 0.75, na.rm = TRUE),
+    mean_consult_time = mean(activity_time, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+  ggplot(aes(x = factor(year), y = factor(center_id), fill = median_wait)) +
+  geom_tile(color = "white", linewidth = 0.01) +
+  scale_fill_viridis_c(option = "inferno", direction = -1, name = "Median waiting time (minutes)") +
+  facet_wrap(~ area, scales = "free_y") +
+  labs(
+    title = "Heatmap of median waiting times by health centre and year",
+    x = "Year", y = "Health centre"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 6),
+    strip.text = element_text(size = 10),
+    legend.position = "bottom"
+  )
+
+heatmap2 <- arrivals %>%
+  filter(area == "Mar Menor") |> 
+  mutate(
+    waiting_time = end_time - start_time - activity_time
+  ) %>%
+  group_by(year, center_id) %>%
+  summarise(
+    n = n(),
+    median_wait = median(waiting_time, na.rm = TRUE),
+    p25 = quantile(waiting_time, 0.25, na.rm = TRUE),
+    p75 = quantile(waiting_time, 0.75, na.rm = TRUE),
+    mean_consult_time = mean(activity_time, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+  ggplot(aes(x = factor(year), y = factor(center_id), fill = median_wait)) +
+  geom_tile(color = "white", linewidth = 0.01) +
+  scale_fill_viridis_c(option = "inferno", direction = -1, name = "Median waiting time (minutes)") +
+  labs(
+    title = "Heatmap of median waiting times by health centre and year",
+    x = "Year", y = "Health centre"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 6),
+    strip.text = element_text(size = 10),
+    legend.position = "bottom"
+  )
+
+violin <- arrivals %>%
+  mutate(waiting_time = end_time - start_time - activity_time) |> 
+  ggplot(aes(x = area, y = waiting_time)) +
+  geom_violin(alpha = 0.9, color = "#6C2167") +
+  geom_jitter(width = 0.3, alpha = 0.1, size = 0.5, color = "#F6C141") +
+  stat_summary(fun = median, geom = "crossbar", width = 0.4, color = "#6C2167", fatten = 0.7) +
+  facet_wrap(~ year) +
+  scale_color_viridis_d(option = "inferno") +
+  labs(
+    title = "Distribution of individual waiting times by healthcare area and year",
+    subtitle = "Includes individual patients (jittered) and median indicators",
+    x = "Healthcare area", y = "Waiting time (minutes)"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "none"
+  )
+
+ggsave("./figs/fig_heatmap.png", heatmap, width = 10, height = 6, dpi = 300)
+ggsave("./figs/fig_heatmap2.png", heatmap2, width = 10, height = 6, dpi = 300)
+ggsave("./figs/fig_violin.png", violin, width = 10, height = 6, dpi = 300)
+```
+
+```{r}
+waiting_age <- arrivals %>%
+  left_join(attributes %>% 
+              dplyr::select(id, age, modality), by = "id") %>%
+  mutate(
+    age_group = case_when(
+      age < 15 ~ "0–14",
+      age >= 15 & age < 65 ~ "15–64",
+      age >= 65 ~ "65+"
+    ),
+    waiting_time = end_time - start_time - activity_time) |> 
+  ggplot(aes(x = age_group, y = waiting_time)) +
+  geom_boxplot(color = "#6C2167") +
+  geom_jitter(width = 0.3, alpha = 0.1, size = 0.5, color = "#F6C141") +
+  facet_wrap(~ year) +
+  labs(title = "Waiting time distribution by age group and year",
+       x = "Age group", 
+       y = "Waiting time (minutes)") +
+  theme_minimal()
+```
+
+
+```{r}
+# ocupación relativa por área y tipo de profesional
+
+occupation <- resources %>%
+  group_by(area, professional_type) %>%
+  summarise(
+    total_busy = sum(server * time, na.rm = TRUE),
+    total_available = sum(capacity * time, na.rm = TRUE),
+    relative_occupation = total_busy / total_available,
+    mean_capacity = mean(capacity, na.rm = TRUE),
+    .groups = "drop"
+  ) |> 
+  ggplot(aes(x = area, y = relative_occupation, fill = professional_type)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  scale_y_continuous(labels = scales::percent) +
+  scale_fill_manual(
+  values = c(
+    "GP" = "#F6C141",       
+    "Nurse" = "#C93E3C",      
+    "Pediatrician" = "#6C2167"
+  )) +
+  labs(title = "Relative resource occupation by area and professional type", 
+       y = "Occupation (%)",
+       x = "Healcare area",
+       fill = "Professional type") +
+  theme_minimal()
+
+ggsave("./figs/fig_occupation.png", occupation, width = 10, height = 6, dpi = 300)
+
+```
+
+
+
+
+```{r}
+
+patient_load <- resources %>%
+  filter(area %in% c("Altiplano")) %>%
+  ggplot(aes(x = time, y = system, color = professional_type)) +
+  geom_step() +
+  facet_grid(~ center_id) +
+  labs(
+    title = "Patient load dynamics by centre and professional type",
+    subtitle = "Altiplano",
+    x = "Minutes",
+    y = "Patients in the system",
+    color = "Professional type"
+  ) +
+  scale_color_manual(values = c(
+    "GP" = "#F6C141",
+    "Nurse" = "#C93E3C",
+    "Pediatrician" = "#481A6C"
+  )) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom"
+  )
+
+
+ggsave("./figs/patient_load.png", patient_load, width = 10, height = 6, dpi = 300)
+```
