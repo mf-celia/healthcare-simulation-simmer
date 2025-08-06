@@ -36,12 +36,30 @@ make_traj_factory <- function(year, center_id, prof_type, age, modality, priorit
   if (priority == 0) {
     # Urgent patients are always attended
     trajectory(paste("traj_urg", resource_name, sep = "_")) %>%
+      # Set patient attributes
+      set_attribute("year", year) %>% 
+      set_attribute("center_id", center_id) %>%
+      set_attribute("modality", match(modality, c("In-person", "Remote", "Home"))) %>%
+      set_attribute("age", age) %>%
+      set_attribute("professional_type", match(prof_type, c("GP", "Nurse", "Pediatrician"))) %>%
+      set_attribute("priority", priority) %>%
+      set_attribute("total_hours", total_hours) %>%
+      # Seize resource and process
       seize(resource_name, 1, priority = priority) %>%
       simmer::timeout(function() rlnorm(1, meanlog, sdlog)) %>%
       release(resource_name, 1)
   } else {
     # Regular patients retry every day until attended
     trajectory(paste("traj", resource_name, sep = "_")) %>%
+      # Set patient attributes at the beginning
+      set_attribute("year", year) %>% 
+      set_attribute("center_id", center_id) %>%
+      set_attribute("modality", match(modality, c("In-person", "Remote", "Home"))) %>%
+      set_attribute("age", age) %>%
+      set_attribute("professional_type", match(prof_type, c("GP", "Nurse", "Pediatrician"))) %>%
+      set_attribute("priority", priority) %>%
+      set_attribute("total_hours", total_hours) %>%
+      # Branch logic for slot availability
       branch(
         option = function() {
           slots_used <- get_global(env, slot_var)
