@@ -68,7 +68,7 @@ scrape_professionals <- function(area_id, center_url) {
         mutate(across(everything(), ~ str_squish(.x))) |>
         mutate(
           area_id    = area_id,
-          center_id  = str_extract(center_url, "(?<=id_centro=)\\d+"),
+          center_id  = as.numeric(str_extract(center_url, "(?<=id_centro=)\\d+")),
           center_url = center_url
         ) |>
         dplyr::select(area_id, center_id, center_url, everything())   # reorder

@@ -185,7 +185,7 @@ primary_care_centers |>
 ```{r}
 source("./scrapping_professionals.R")
 
-professionals <- professionals_scrap |> 
+professionals_week_hours <- professionals_scrap |> 
   # nornalizamos nombres y áreas
   mutate(
     professional_type = case_when(
@@ -221,8 +221,10 @@ professionals <- professionals_scrap |>
     mean_type = mean(week_hours, na.rm = TRUE),
     week_hours = ifelse(is.na(week_hours), mean_type, week_hours)
   ) |> 
-  ungroup() |> 
+  ungroup() 
   
+
+professionals_center_weights <- professionals_week_hours |> 
   # totales y pesos
   group_by(area, center_id, professional_type) |> 
   summarise(total_hours = sum(week_hours), .groups = "drop") |> 
@@ -230,6 +232,7 @@ professionals <- professionals_scrap |>
   mutate(total_area_hours = sum(total_hours)) |> 
   ungroup() |> 
   mutate(weight = total_hours / total_area_hours)
+
 ``` 
 
 ### Consultations per professional (ordinary and emergency)
@@ -241,7 +244,7 @@ ord_consultations_center <- consultations |>
          priority = 1) %>%
   
   # merging with the weight by center
-  left_join(professionals, by = c("area", "professional_type")) %>%
+  left_join(professionals_center_weights, by = c("area", "professional_type")) %>%
   
   # distributing consultations based on weight
   mutate(day_consultations_center = round(day_consultations * weight)) %>%
@@ -257,7 +260,7 @@ emerg_consultations_center <- emergencies |>
          priority = 0) |> 
 
   # merging with the weight by center
-  left_join(professionals |> 
+  left_join(professionals_center_weights |> 
               filter(professional_type == "GP"), 
             by = c("area")) |> 
   # distributing emergency consultations based on weight
@@ -278,6 +281,7 @@ set.seed(123)  # para reproducibilidad
 
 llegadas <- bind_rows(ord_consultations_center,
                       emerg_consultations_center) |> 
+  filter(year == 2023) |> 
   rowwise() %>%
   mutate(
     arrival_time = list(sort(runif(day_consultations_center, 0, 420))),
@@ -299,14 +303,30 @@ llegadas <- bind_rows(ord_consultations_center,
 
 
 
-### Simulation
 
 ```{r}
-# creating environment
-env <- simmer("Murcia")
+# ===============================================================
+# PRIMARY CARE SIMULATION – FIXED DAILY SLOTS PER PROFESSIONAL
+# No agenda resets, no re-attempts. Patients are rejected if no slot available.
+# ===============================================================
 
-# defining ordinary trajectory function according time
-make_traj_factory <- function(year, center_id, prof_type, age, modality, priority, sigma = 0.3) {
+# 1. Set up simulation environment and parameters
+env <- simmer("Murcia")
+daily_minutes <- 420
+total_time <- daily_minutes * 5  # simulate 5 full working days = 2100 minutes
+
+# 2. Define resources and global slot counters
+unique_resources <- professionals_center_weights %>%
+  mutate(resource_name = paste(center_id, professional_type, sep = "_")) %>%
+  pull(resource_name) %>%
+  unique()
+
+for (res in unique_resources) {
+  env <- add_global(env, paste0("slots_", res), 0)  # e.g., slots_01_GP
+}
+
+# 3. Define patient trajectory
+make_traj_factory <- function(year, center_id, prof_type, age, modality, priority, total_hours, sigma = 0.3) {
   mu <- 12
   if (prof_type == "GP" && age >= 65) mu <- mu + 5
   if (prof_type == "Pediatrician" && age < 1) mu <- mu + 5
@@ -314,26 +334,61 @@ make_traj_factory <- function(year, center_id, prof_type, age, modality, priorit
   if (modality == "Home") mu <- mu * 2
 
   meanlog <- log(mu) - 0.5 * sigma^2
-  sdlog <- sigma 
-  
-  traj_name <- paste("traj", center_id, prof_type, sep = "_")
-  
-  trajectory(traj_name) %>%
+  sdlog <- sigma
+
+  resource_name <- paste(center_id, prof_type, sep = "_")
+  slot_var <- paste0("slots_", resource_name)
+  daily_slots <- round((total_hours / 5) * 60 / mu)
+
+  # Trayectoria principal ---
+  trajectory(paste("traj", resource_name, sep = "_")) %>%
     
-    set_attribute("year", year) |> 
-    set_attribute("center_id", center_id) %>%
+    # Asignar atributos UNA SOLA VEZ al principio ---
+    set_attribute("year", year) %>%
+    set_attribute("center_id", as.numeric(center_id)) %>%
     set_attribute("modality", match(modality, c("In-person", "Remote", "Home"))) %>%
     set_attribute("age", age) %>%
     set_attribute("professional_type", match(prof_type, c("GP", "Nurse", "Pediatrician"))) |> 
-    seize(paste(center_id, prof_type, sep = "_"), 1, priority = priority) %>%
-    simmer::timeout(function() rlnorm(1, meanlog = meanlog, sdlog = sdlog)) %>% 
-    release(paste(center_id, prof_type, sep = "_"), 1)
+    set_attribute("priority", priority) %>%
+
+    # 4. Ramificar por prioridad (urgente vs. regular) ---
+    branch(
+      option = function() ifelse(priority == 0, 1, 2),
+      continue = c(TRUE, TRUE),
+
+      # Path 1: Paciente URGENTE (se salta la lógica de slots)
+      trajectory("urgent_path") %>%
+        seize(resource_name, 1, priority = priority) %>%
+        simmer::timeout(function() rlnorm(1, meanlog, sdlog)) %>%
+        release(resource_name, 1),
+
+      # Path 2: Paciente REGULAR (comprueba slots y puede esperar)
+      trajectory("regular_path") %>%
+        branch(
+          option = function() {
+            slots_used <- get_global(env, slot_var)
+            if (slots_used >= daily_slots) return(1) else return(2)
+          },
+          continue = c(TRUE, TRUE),
+
+          # Sub-Path 2.1: No hay slots -> esperar y reintentar
+          trajectory("wait_retry") %>%
+            simmer::timeout(daily_minutes) %>%
+            rollback(2), # Vuelve al branch de "comprobar slots"
+
+          # Sub-Path 2.2: Hay slot -> atender
+          trajectory("attend") %>%
+            set_global(slot_var, 1, mod = "+") %>%
+            seize(resource_name, 1, priority = priority) %>%
+            simmer::timeout(function() rlnorm(1, meanlog, sdlog)) %>%
+            release(resource_name, 1)
+        )
+    )
 }
 
-
-# adding resources
+# 4. Add resources with capacity based on total weekly hours
 pwalk(
-  professionals |> 
+  professionals_center_weights %>%
     mutate(capacity = pmax(1, round(total_hours / 37.5))),
   function(center_id, professional_type, capacity, ...) {
     resource_name <- paste(center_id, professional_type, sep = "_")
@@ -341,26 +396,105 @@ pwalk(
   }
 )
 
-# patient generation
-
+# 5. Add patient generators using arrival data
 pwalk(
-  llegadas |> 
-    dplyr::select(id, year, center_id, priority, professional_type, age, modality, arrival_time),
-  function(id, year, center_id, priority, professional_type, age, modality, arrival_time, ...) {
+  llegadas %>%
+    dplyr::select(id, year, center_id, priority, professional_type, age, modality, arrival_time, total_hours),
+  function(id, year, center_id, priority, professional_type, age, modality, arrival_time, total_hours, ...) {
     gen_name <- paste0("p_", id)
-
     env <<- add_generator(
       env,
       name_prefix = gen_name,
-      trajectory = make_traj_factory(year, center_id, professional_type, age, modality, priority),
+      trajectory = make_traj_factory(year, center_id, professional_type, age, modality, priority, total_hours),
       distribution = at(arrival_time),
       mon = 2
     )
   }
 )
 
-# running simulation for 420 minutes (7 hours) 
-invisible(env %>% run(until = 420))
+# 6. Reset slot counters at the start of each simulated day
+reset_times <- seq(0, total_time, by = daily_minutes)
+
+for (res in unique_resources) {
+  slot_var <- paste0("slots_", res)
+  env <- add_generator(
+    env,  
+    name_prefix = paste0("reset_", res),
+    trajectory = trajectory() %>%
+      set_global(slot_var, 0),  # reset slot usage for the resource
+    distribution = at(reset_times),
+    mon = 2
+  )
+}
+
+# 7. Run the simulation
+invisible(env %>% run(until = total_time))
+
+```
+
+
+### Simulation
+
+```{r}
+# # creating environment
+# env <- simmer("Murcia")
+# 
+# # defining ordinary trajectory function according time
+# make_traj_factory <- function(year, center_id, prof_type, age, modality, priority, sigma = 0.3) {
+#   mu <- 12
+#   if (prof_type == "GP" && age >= 65) mu <- mu + 5
+#   if (prof_type == "Pediatrician" && age < 1) mu <- mu + 5
+#   if (modality == "Remote") mu <- pmax(mu - 5, 2)
+#   if (modality == "Home") mu <- mu * 2
+# 
+#   meanlog <- log(mu) - 0.5 * sigma^2
+#   sdlog <- sigma 
+#   
+#   traj_name <- paste("traj", center_id, prof_type, sep = "_")
+#   
+#   trajectory(traj_name) %>%
+#     
+#     set_attribute("year", year) |> 
+#     set_attribute("center_id", center_id) %>%
+#     set_attribute("modality", match(modality, c("In-person", "Remote", "Home"))) %>%
+#     set_attribute("age", age) %>%
+#     set_attribute("professional_type", match(prof_type, c("GP", "Nurse", "Pediatrician"))) |> 
+#     seize(paste(center_id, prof_type, sep = "_"), 1, priority = priority) %>%
+#     simmer::timeout(function() rlnorm(1, meanlog = meanlog, sdlog = sdlog)) %>% 
+#     release(paste(center_id, prof_type, sep = "_"), 1)
+# }
+# 
+# 
+# # adding resources
+# pwalk(
+#   professionals |> 
+#     mutate(capacity = pmax(1, round(total_hours / 37.5))),
+#   function(center_id, professional_type, capacity, ...) {
+#     resource_name <- paste(center_id, professional_type, sep = "_")
+#     env <<- add_resource(env, resource_name, capacity)
+#   }
+# )
+# 
+# # patient generation
+# 
+# pwalk(
+#   llegadas |> 
+#     dplyr::select(id, year, center_id, priority, professional_type, age, modality, arrival_time),
+#   function(id, year, center_id, priority, professional_type, age, modality, arrival_time, ...) {
+#     gen_name <- paste0("p_", id)
+# 
+#     env <<- add_generator(
+#       env,
+#       name_prefix = gen_name,
+#       trajectory = make_traj_factory(year, center_id, professional_type, age, modality, priority),
+#       distribution = at(arrival_time),
+#       mon = 2
+#     )
+#   }
+# )
+# 
+# # running simulation for 420 minutes (7 hours) 
+# invisible(env %>% run(until = 420))
 
 ```
 
@@ -398,6 +532,7 @@ arrivals <- get_mon_arrivals(env) |>
               dplyr::select(id, area, year, center_id, professional_type),
             by = c("id")) |> 
   write_csv("./data/arrivals.csv")
+
 ```
 
 ```{r}
