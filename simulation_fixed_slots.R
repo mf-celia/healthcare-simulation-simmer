@@ -101,7 +101,7 @@ pwalk(
     env <<- add_generator(
       env,
       name_prefix = gen_name,
-      trajectory = make_traj_factory(year, center_id, professional_type, age, modality, priority, total_hours),
+      trajectory = make_traj_factory(year, center_id, prof_type = professional_type, age, modality, priority, total_hours),
       distribution = at(arrival_time),
       mon = 2
     )
