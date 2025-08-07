@@ -307,7 +307,7 @@ llegadas <- bind_rows(ord_consultations_center,
 ```{r}
 # ===============================================================
 # PRIMARY CARE SIMULATION – FIXED DAILY SLOTS PER PROFESSIONAL
-# No agenda resets, no re-attempts. Patients are rejected if no slot available.
+# No agenda resets, re-attempts. 
 # ===============================================================
 
 # 1. Set up simulation environment and parameters
@@ -364,6 +364,7 @@ make_traj_factory <- function(year, center_id, prof_type, age, modality, priorit
 
       # Path 2: Paciente REGULAR (comprueba slots y puede esperar)
       trajectory("regular_path") %>%
+        set_attribute("retries", 0) %>%
         branch(
           option = function() {
             slots_used <- get_global(env, slot_var)
@@ -373,6 +374,7 @@ make_traj_factory <- function(year, center_id, prof_type, age, modality, priorit
 
           # Sub-Path 2.1: No hay slots -> esperar y reintentar
           trajectory("wait_retry") %>%
+            set_attribute("retries", 1, mod = "+") %>%  # Incrementa en +1
             simmer::timeout(daily_minutes) %>%
             rollback(2), # Vuelve al branch de "comprobar slots"
 
@@ -505,40 +507,44 @@ invisible(env %>% run(until = total_time))
 
 ```{r}
 resources <- get_mon_resources(env) |> 
-  mutate(center_id = str_extract(resource, "^\\d+"),
+  mutate(center_id = as.numeric(str_extract(resource, "^\\d+")),
          professional_type = str_extract(resource, "(?<=_).*")) |> 
-  left_join(professionals |> 
-              dplyr::select(area, center_id),
-            by = "center_id") |> 
-  write_csv("./data/resources.csv")
+  left_join(professionals_center_weights |> 
+              dplyr::select(area, center_id) |> 
+              distinct(),
+            by = "center_id") 
 
 
-attributes <- get_mon_attributes(env) |> 
+patient_attributes <- get_mon_attributes(env) |> 
+  filter(!str_starts(key, "slots_")) |> 
   pivot_wider(names_from = "key",
-              values_from = "value") |> 
+              values_from = "value",
+              values_fn = max) |> 
   mutate(id = as.numeric(str_remove(name, "^p_")),
          id = id/10) |> # eliminamos el 0 que sobra al final
   left_join(llegadas |> 
               dplyr::select(id, area, center_id),
-            by = c("id", "center_id")) |> 
-  write_csv("./data/attributes.csv")
+            by = c("id", "center_id"))
 
 
-arrivals <- get_mon_arrivals(env) |> 
+patient_arrivals <- get_mon_arrivals(env) |> 
+  filter(!str_starts(name, "reset_")) |> 
   mutate(id = as.numeric(str_remove(name, "^p_")),
          id = id/10) |> # eliminamos el 0 que sobra al final
   arrange(id) |> 
   left_join(llegadas |> 
               dplyr::select(id, area, year, center_id, professional_type),
-            by = c("id")) |> 
-  write_csv("./data/arrivals.csv")
+            by = c("id")) 
 
+
+get_mon_attributes(env) |> 
+  distinct(key)
 ```
 
 ```{r}
 # composición de pacientes simulados
 
-attributes_summary <- attributes %>%
+attributes_summary <- patient_attributes %>%
   mutate(
     modality = factor(modality, levels = 1:3, labels = c("In-person", "Remote", "Home")),
     age_group = case_when(
@@ -591,6 +597,17 @@ ggsave("./figs/fig_age_area.png", age_area, width = 10, height = 6, dpi = 300)
 
 ```
 
+```{r}
+retries_summary <- get_mon_attributes(env) %>%
+  filter(key == "retries") %>%
+  mutate(id = as.numeric(str_remove(name, "^p_")),
+         id = id/10) |> # eliminamos el 0 que sobra al final
+  left_join(llegadas |> 
+              dplyr::select(id, area, center_id),
+            by = c("id")) |> 
+  group_by(area, center_id, id) %>%
+  summarise(days_to_attend = max(value) + 1)
+```
 
 
 ```{r}
@@ -678,7 +695,7 @@ ggsave("./figs/fig_violin.png", violin, width = 10, height = 6, dpi = 300)
 
 ```{r}
 waiting_age <- arrivals %>%
-  left_join(attributes %>% 
+  left_join(patient_attributes %>% 
               dplyr::select(id, age, modality), by = "id") %>%
   mutate(
     age_group = case_when(
