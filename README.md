@@ -45,5 +45,7 @@ The simulation is built using the `simmer` package in R, incorporating realistic
 
 ## **Author**
 Celia Muñoz Fernández
+
 Master in Computational Social Science
+
 UC3M
