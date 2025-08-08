@@ -1,0 +1,541 @@
+year,area,age_group,n_emerg
+2021,Altiplano,0-4,2093
+2021,Altiplano,10-14,1605
+2021,Altiplano,15-19,2233
+2021,Altiplano,20-24,2672
+2021,Altiplano,25-29,2609
+2021,Altiplano,30-34,2310
+2021,Altiplano,35-39,2449
+2021,Altiplano,40-44,3036
+2021,Altiplano,45-49,2921
+2021,Altiplano,5-9,1598
+2021,Altiplano,50-54,2333
+2021,Altiplano,55-59,2338
+2021,Altiplano,60-64,1939
+2021,Altiplano,65-69,1277
+2021,Altiplano,70-74,1149
+2021,Altiplano,75-79,862
+2021,Altiplano,80-84,631
+2021,Altiplano,85-89,496
+2021,Altiplano,90-94,227
+2021,Altiplano,95+,64
+2021,Cartagena,0-4,12272
+2021,Cartagena,10-14,10708
+2021,Cartagena,15-19,14367
+2021,Cartagena,20-24,15650
+2021,Cartagena,25-29,15561
+2021,Cartagena,30-34,15402
+2021,Cartagena,35-39,15551
+2021,Cartagena,40-44,18207
+2021,Cartagena,45-49,16488
+2021,Cartagena,5-9,10305
+2021,Cartagena,50-54,15530
+2021,Cartagena,55-59,13429
+2021,Cartagena,60-64,10516
+2021,Cartagena,65-69,8036
+2021,Cartagena,70-74,6017
+2021,Cartagena,75-79,4747
+2021,Cartagena,80-84,3459
+2021,Cartagena,85-89,2558
+2021,Cartagena,90-94,1132
+2021,Cartagena,95+,269
+2021,Lorca,0-4,12161
+2021,Lorca,10-14,7976
+2021,Lorca,15-19,11716
+2021,Lorca,20-24,14044
+2021,Lorca,25-29,13915
+2021,Lorca,30-34,13289
+2021,Lorca,35-39,14061
+2021,Lorca,40-44,16472
+2021,Lorca,45-49,14937
+2021,Lorca,5-9,8154
+2021,Lorca,50-54,13827
+2021,Lorca,55-59,11148
+2021,Lorca,60-64,8377
+2021,Lorca,65-69,6085
+2021,Lorca,70-74,5725
+2021,Lorca,75-79,4630
+2021,Lorca,80-84,3507
+2021,Lorca,85-89,2685
+2021,Lorca,90-94,1366
+2021,Lorca,95+,426
+2021,Mar Menor,0-4,4788
+2021,Mar Menor,10-14,3525
+2021,Mar Menor,15-19,4169
+2021,Mar Menor,20-24,5172
+2021,Mar Menor,25-29,4724
+2021,Mar Menor,30-34,4895
+2021,Mar Menor,35-39,5539
+2021,Mar Menor,40-44,6039
+2021,Mar Menor,45-49,5523
+2021,Mar Menor,5-9,3690
+2021,Mar Menor,50-54,4699
+2021,Mar Menor,55-59,3732
+2021,Mar Menor,60-64,2544
+2021,Mar Menor,65-69,1824
+2021,Mar Menor,70-74,1473
+2021,Mar Menor,75-79,1142
+2021,Mar Menor,80-84,842
+2021,Mar Menor,85-89,523
+2021,Mar Menor,90-94,253
+2021,Mar Menor,95+,72
+2021,Murcia Este,0-4,3446
+2021,Murcia Este,10-14,2920
+2021,Murcia Este,15-19,6212
+2021,Murcia Este,20-24,7076
+2021,Murcia Este,25-29,7555
+2021,Murcia Este,30-34,7473
+2021,Murcia Este,35-39,7552
+2021,Murcia Este,40-44,9247
+2021,Murcia Este,45-49,9205
+2021,Murcia Este,5-9,2518
+2021,Murcia Este,50-54,7964
+2021,Murcia Este,55-59,6578
+2021,Murcia Este,60-64,5395
+2021,Murcia Este,65-69,3773
+2021,Murcia Este,70-74,2790
+2021,Murcia Este,75-79,2573
+2021,Murcia Este,80-84,1895
+2021,Murcia Este,85-89,1407
+2021,Murcia Este,90-94,724
+2021,Murcia Este,95+,171
+2021,Murcia Oeste,0-4,9419
+2021,Murcia Oeste,10-14,6330
+2021,Murcia Oeste,15-19,9401
+2021,Murcia Oeste,20-24,12214
+2021,Murcia Oeste,25-29,11866
+2021,Murcia Oeste,30-34,11670
+2021,Murcia Oeste,35-39,11622
+2021,Murcia Oeste,40-44,14039
+2021,Murcia Oeste,45-49,12638
+2021,Murcia Oeste,5-9,6303
+2021,Murcia Oeste,50-54,11666
+2021,Murcia Oeste,55-59,10271
+2021,Murcia Oeste,60-64,7750
+2021,Murcia Oeste,65-69,5713
+2021,Murcia Oeste,70-74,4815
+2021,Murcia Oeste,75-79,3801
+2021,Murcia Oeste,80-84,2939
+2021,Murcia Oeste,85-89,2352
+2021,Murcia Oeste,90-94,974
+2021,Murcia Oeste,95+,239
+2021,Noroeste,0-4,4873
+2021,Noroeste,10-14,3728
+2021,Noroeste,15-19,5986
+2021,Noroeste,20-24,6486
+2021,Noroeste,25-29,5908
+2021,Noroeste,30-34,5645
+2021,Noroeste,35-39,5315
+2021,Noroeste,40-44,6075
+2021,Noroeste,45-49,6953
+2021,Noroeste,5-9,3632
+2021,Noroeste,50-54,6820
+2021,Noroeste,55-59,6304
+2021,Noroeste,60-64,5074
+2021,Noroeste,65-69,3594
+2021,Noroeste,70-74,2988
+2021,Noroeste,75-79,2584
+2021,Noroeste,80-84,2289
+2021,Noroeste,85-89,1831
+2021,Noroeste,90-94,1026
+2021,Noroeste,95+,254
+2021,Vega Alta del Segura,0-4,2700
+2021,Vega Alta del Segura,10-14,2148
+2021,Vega Alta del Segura,15-19,2628
+2021,Vega Alta del Segura,20-24,3217
+2021,Vega Alta del Segura,25-29,2805
+2021,Vega Alta del Segura,30-34,2696
+2021,Vega Alta del Segura,35-39,2923
+2021,Vega Alta del Segura,40-44,3045
+2021,Vega Alta del Segura,45-49,3418
+2021,Vega Alta del Segura,5-9,2057
+2021,Vega Alta del Segura,50-54,3161
+2021,Vega Alta del Segura,55-59,2521
+2021,Vega Alta del Segura,60-64,2049
+2021,Vega Alta del Segura,65-69,1588
+2021,Vega Alta del Segura,70-74,1431
+2021,Vega Alta del Segura,75-79,1173
+2021,Vega Alta del Segura,80-84,951
+2021,Vega Alta del Segura,85-89,792
+2021,Vega Alta del Segura,90-94,373
+2021,Vega Alta del Segura,95+,93
+2021,Vega Media del Segura,0-4,9500
+2021,Vega Media del Segura,10-14,8159
+2021,Vega Media del Segura,15-19,10302
+2021,Vega Media del Segura,20-24,11718
+2021,Vega Media del Segura,25-29,11611
+2021,Vega Media del Segura,30-34,11906
+2021,Vega Media del Segura,35-39,11852
+2021,Vega Media del Segura,40-44,13692
+2021,Vega Media del Segura,45-49,13617
+2021,Vega Media del Segura,5-9,7764
+2021,Vega Media del Segura,50-54,12132
+2021,Vega Media del Segura,55-59,10758
+2021,Vega Media del Segura,60-64,8023
+2021,Vega Media del Segura,65-69,5693
+2021,Vega Media del Segura,70-74,4516
+2021,Vega Media del Segura,75-79,3393
+2021,Vega Media del Segura,80-84,2933
+2021,Vega Media del Segura,85-89,2377
+2021,Vega Media del Segura,90-94,1016
+2021,Vega Media del Segura,95+,303
+2022,Altiplano,0-4,2374
+2022,Altiplano,10-14,1577
+2022,Altiplano,15-19,2040
+2022,Altiplano,20-24,2265
+2022,Altiplano,25-29,2202
+2022,Altiplano,30-34,2114
+2022,Altiplano,35-39,2255
+2022,Altiplano,40-44,2801
+2022,Altiplano,45-49,2784
+2022,Altiplano,5-9,1973
+2022,Altiplano,50-54,2147
+2022,Altiplano,55-59,1794
+2022,Altiplano,60-64,1528
+2022,Altiplano,65-69,1047
+2022,Altiplano,70-74,994
+2022,Altiplano,75-79,700
+2022,Altiplano,80-84,437
+2022,Altiplano,85-89,353
+2022,Altiplano,90-94,117
+2022,Altiplano,95+,21
+2022,Cartagena,0-4,11311
+2022,Cartagena,10-14,9469
+2022,Cartagena,15-19,10955
+2022,Cartagena,20-24,11432
+2022,Cartagena,25-29,10750
+2022,Cartagena,30-34,11329
+2022,Cartagena,35-39,12019
+2022,Cartagena,40-44,13238
+2022,Cartagena,45-49,12462
+2022,Cartagena,5-9,10078
+2022,Cartagena,50-54,11001
+2022,Cartagena,55-59,9531
+2022,Cartagena,60-64,7171
+2022,Cartagena,65-69,5785
+2022,Cartagena,70-74,4795
+2022,Cartagena,75-79,4006
+2022,Cartagena,80-84,2578
+2022,Cartagena,85-89,1900
+2022,Cartagena,90-94,843
+2022,Cartagena,95+,202
+2022,Lorca,0-4,14982
+2022,Lorca,10-14,9432
+2022,Lorca,15-19,10095
+2022,Lorca,20-24,11953
+2022,Lorca,25-29,11492
+2022,Lorca,30-34,11405
+2022,Lorca,35-39,12685
+2022,Lorca,40-44,14400
+2022,Lorca,45-49,13000
+2022,Lorca,5-9,12463
+2022,Lorca,50-54,11084
+2022,Lorca,55-59,9071
+2022,Lorca,60-64,7104
+2022,Lorca,65-69,5110
+2022,Lorca,70-74,4978
+2022,Lorca,75-79,4255
+2022,Lorca,80-84,3080
+2022,Lorca,85-89,2437
+2022,Lorca,90-94,999
+2022,Lorca,95+,284
+2022,Mar Menor,0-4,6579
+2022,Mar Menor,10-14,4340
+2022,Mar Menor,15-19,4701
+2022,Mar Menor,20-24,5228
+2022,Mar Menor,25-29,5042
+2022,Mar Menor,30-34,4988
+2022,Mar Menor,35-39,5205
+2022,Mar Menor,40-44,5783
+2022,Mar Menor,45-49,5247
+2022,Mar Menor,5-9,5605
+2022,Mar Menor,50-54,4617
+2022,Mar Menor,55-59,3719
+2022,Mar Menor,60-64,2561
+2022,Mar Menor,65-69,1706
+2022,Mar Menor,70-74,1317
+2022,Mar Menor,75-79,1135
+2022,Mar Menor,80-84,745
+2022,Mar Menor,85-89,446
+2022,Mar Menor,90-94,166
+2022,Mar Menor,95+,46
+2022,Murcia Este,0-4,4693
+2022,Murcia Este,10-14,4173
+2022,Murcia Este,15-19,5569
+2022,Murcia Este,20-24,6494
+2022,Murcia Este,25-29,6221
+2022,Murcia Este,30-34,6282
+2022,Murcia Este,35-39,6250
+2022,Murcia Este,40-44,7125
+2022,Murcia Este,45-49,7076
+2022,Murcia Este,5-9,4531
+2022,Murcia Este,50-54,6307
+2022,Murcia Este,55-59,5685
+2022,Murcia Este,60-64,4420
+2022,Murcia Este,65-69,2852
+2022,Murcia Este,70-74,2430
+2022,Murcia Este,75-79,1832
+2022,Murcia Este,80-84,1502
+2022,Murcia Este,85-89,1115
+2022,Murcia Este,90-94,549
+2022,Murcia Este,95+,112
+2022,Murcia Oeste,0-4,11445
+2022,Murcia Oeste,10-14,8423
+2022,Murcia Oeste,15-19,10262
+2022,Murcia Oeste,20-24,12485
+2022,Murcia Oeste,25-29,11510
+2022,Murcia Oeste,30-34,11218
+2022,Murcia Oeste,35-39,11123
+2022,Murcia Oeste,40-44,12733
+2022,Murcia Oeste,45-49,12308
+2022,Murcia Oeste,5-9,9850
+2022,Murcia Oeste,50-54,10837
+2022,Murcia Oeste,55-59,9362
+2022,Murcia Oeste,60-64,7373
+2022,Murcia Oeste,65-69,5080
+2022,Murcia Oeste,70-74,4223
+2022,Murcia Oeste,75-79,3721
+2022,Murcia Oeste,80-84,2537
+2022,Murcia Oeste,85-89,2090
+2022,Murcia Oeste,90-94,980
+2022,Murcia Oeste,95+,258
+2022,Noroeste,0-4,6596
+2022,Noroeste,10-14,4954
+2022,Noroeste,15-19,4883
+2022,Noroeste,20-24,4426
+2022,Noroeste,25-29,4668
+2022,Noroeste,30-34,4543
+2022,Noroeste,35-39,4812
+2022,Noroeste,40-44,5617
+2022,Noroeste,45-49,5620
+2022,Noroeste,5-9,5774
+2022,Noroeste,50-54,5550
+2022,Noroeste,55-59,5430
+2022,Noroeste,60-64,4891
+2022,Noroeste,65-69,3755
+2022,Noroeste,70-74,3384
+2022,Noroeste,75-79,3098
+2022,Noroeste,80-84,2496
+2022,Noroeste,85-89,2125
+2022,Noroeste,90-94,1248
+2022,Noroeste,95+,283
+2022,Vega Alta del Segura,0-4,2858
+2022,Vega Alta del Segura,10-14,2084
+2022,Vega Alta del Segura,15-19,2675
+2022,Vega Alta del Segura,20-24,3169
+2022,Vega Alta del Segura,25-29,2777
+2022,Vega Alta del Segura,30-34,2782
+2022,Vega Alta del Segura,35-39,2848
+2022,Vega Alta del Segura,40-44,3113
+2022,Vega Alta del Segura,45-49,3007
+2022,Vega Alta del Segura,5-9,2696
+2022,Vega Alta del Segura,50-54,2858
+2022,Vega Alta del Segura,55-59,2459
+2022,Vega Alta del Segura,60-64,1950
+2022,Vega Alta del Segura,65-69,1312
+2022,Vega Alta del Segura,70-74,1121
+2022,Vega Alta del Segura,75-79,1046
+2022,Vega Alta del Segura,80-84,705
+2022,Vega Alta del Segura,85-89,551
+2022,Vega Alta del Segura,90-94,265
+2022,Vega Alta del Segura,95+,44
+2022,Vega Media del Segura,0-4,10009
+2022,Vega Media del Segura,10-14,7229
+2022,Vega Media del Segura,15-19,7076
+2022,Vega Media del Segura,20-24,7790
+2022,Vega Media del Segura,25-29,7327
+2022,Vega Media del Segura,30-34,7817
+2022,Vega Media del Segura,35-39,8254
+2022,Vega Media del Segura,40-44,9728
+2022,Vega Media del Segura,45-49,8821
+2022,Vega Media del Segura,5-9,8669
+2022,Vega Media del Segura,50-54,7744
+2022,Vega Media del Segura,55-59,6665
+2022,Vega Media del Segura,60-64,5138
+2022,Vega Media del Segura,65-69,3721
+2022,Vega Media del Segura,70-74,3270
+2022,Vega Media del Segura,75-79,2832
+2022,Vega Media del Segura,80-84,2023
+2022,Vega Media del Segura,85-89,1540
+2022,Vega Media del Segura,90-94,740
+2022,Vega Media del Segura,95+,225
+2023,Altiplano,0-4,2650
+2023,Altiplano,10-14,1855
+2023,Altiplano,15-19,2143
+2023,Altiplano,20-24,2522
+2023,Altiplano,25-29,2406
+2023,Altiplano,30-34,2600
+2023,Altiplano,35-39,2646
+2023,Altiplano,40-44,3144
+2023,Altiplano,45-49,3257
+2023,Altiplano,5-9,2209
+2023,Altiplano,50-54,2565
+2023,Altiplano,55-59,2139
+2023,Altiplano,60-64,1818
+2023,Altiplano,65-69,1252
+2023,Altiplano,70-74,1151
+2023,Altiplano,75-79,844
+2023,Altiplano,80-84,566
+2023,Altiplano,85-89,372
+2023,Altiplano,90-94,182
+2023,Altiplano,95+,34
+2023,Cartagena,0-4,11243
+2023,Cartagena,10-14,9257
+2023,Cartagena,15-19,11189
+2023,Cartagena,20-24,12133
+2023,Cartagena,25-29,10556
+2023,Cartagena,30-34,11545
+2023,Cartagena,35-39,12081
+2023,Cartagena,40-44,13462
+2023,Cartagena,45-49,12939
+2023,Cartagena,5-9,11056
+2023,Cartagena,50-54,11347
+2023,Cartagena,55-59,10341
+2023,Cartagena,60-64,7828
+2023,Cartagena,65-69,6320
+2023,Cartagena,70-74,4976
+2023,Cartagena,75-79,4357
+2023,Cartagena,80-84,2698
+2023,Cartagena,85-89,1846
+2023,Cartagena,90-94,745
+2023,Cartagena,95+,158
+2023,Lorca,0-4,14918
+2023,Lorca,10-14,9333
+2023,Lorca,15-19,10645
+2023,Lorca,20-24,12519
+2023,Lorca,25-29,12587
+2023,Lorca,30-34,12453
+2023,Lorca,35-39,13427
+2023,Lorca,40-44,15649
+2023,Lorca,45-49,14795
+2023,Lorca,5-9,13022
+2023,Lorca,50-54,12228
+2023,Lorca,55-59,9995
+2023,Lorca,60-64,8077
+2023,Lorca,65-69,5695
+2023,Lorca,70-74,5069
+2023,Lorca,75-79,4349
+2023,Lorca,80-84,3015
+2023,Lorca,85-89,2188
+2023,Lorca,90-94,987
+2023,Lorca,95+,291
+2023,Mar Menor,0-4,6513
+2023,Mar Menor,10-14,4829
+2023,Mar Menor,15-19,4802
+2023,Mar Menor,20-24,5503
+2023,Mar Menor,25-29,5428
+2023,Mar Menor,30-34,5614
+2023,Mar Menor,35-39,5592
+2023,Mar Menor,40-44,6312
+2023,Mar Menor,45-49,5953
+2023,Mar Menor,5-9,6503
+2023,Mar Menor,50-54,5246
+2023,Mar Menor,55-59,4241
+2023,Mar Menor,60-64,3119
+2023,Mar Menor,65-69,1946
+2023,Mar Menor,70-74,1389
+2023,Mar Menor,75-79,1174
+2023,Mar Menor,80-84,769
+2023,Mar Menor,85-89,482
+2023,Mar Menor,90-94,215
+2023,Mar Menor,95+,30
+2023,Murcia Este,0-4,5392
+2023,Murcia Este,10-14,4789
+2023,Murcia Este,15-19,5756
+2023,Murcia Este,20-24,6471
+2023,Murcia Este,25-29,6097
+2023,Murcia Este,30-34,6317
+2023,Murcia Este,35-39,6452
+2023,Murcia Este,40-44,7441
+2023,Murcia Este,45-49,7382
+2023,Murcia Este,5-9,5831
+2023,Murcia Este,50-54,6424
+2023,Murcia Este,55-59,5902
+2023,Murcia Este,60-64,4477
+2023,Murcia Este,65-69,3209
+2023,Murcia Este,70-74,2580
+2023,Murcia Este,75-79,2081
+2023,Murcia Este,80-84,1508
+2023,Murcia Este,85-89,1038
+2023,Murcia Este,90-94,496
+2023,Murcia Este,95+,131
+2023,Murcia Oeste,0-4,11718
+2023,Murcia Oeste,10-14,8605
+2023,Murcia Oeste,15-19,10436
+2023,Murcia Oeste,20-24,12482
+2023,Murcia Oeste,25-29,11476
+2023,Murcia Oeste,30-34,11431
+2023,Murcia Oeste,35-39,11568
+2023,Murcia Oeste,40-44,13297
+2023,Murcia Oeste,45-49,13160
+2023,Murcia Oeste,5-9,11245
+2023,Murcia Oeste,50-54,11418
+2023,Murcia Oeste,55-59,10019
+2023,Murcia Oeste,60-64,8014
+2023,Murcia Oeste,65-69,5464
+2023,Murcia Oeste,70-74,4651
+2023,Murcia Oeste,75-79,3939
+2023,Murcia Oeste,80-84,2740
+2023,Murcia Oeste,85-89,2039
+2023,Murcia Oeste,90-94,958
+2023,Murcia Oeste,95+,243
+2023,Noroeste,0-4,4740
+2023,Noroeste,10-14,3433
+2023,Noroeste,15-19,3916
+2023,Noroeste,20-24,3966
+2023,Noroeste,25-29,4356
+2023,Noroeste,30-34,4299
+2023,Noroeste,35-39,4327
+2023,Noroeste,40-44,5048
+2023,Noroeste,45-49,5022
+2023,Noroeste,5-9,4370
+2023,Noroeste,50-54,4931
+2023,Noroeste,55-59,5247
+2023,Noroeste,60-64,4591
+2023,Noroeste,65-69,3430
+2023,Noroeste,70-74,2956
+2023,Noroeste,75-79,2687
+2023,Noroeste,80-84,2119
+2023,Noroeste,85-89,1529
+2023,Noroeste,90-94,1079
+2023,Noroeste,95+,274
+2023,Vega Alta del Segura,0-4,3089
+2023,Vega Alta del Segura,10-14,2014
+2023,Vega Alta del Segura,15-19,2351
+2023,Vega Alta del Segura,20-24,2997
+2023,Vega Alta del Segura,25-29,2625
+2023,Vega Alta del Segura,30-34,2786
+2023,Vega Alta del Segura,35-39,2747
+2023,Vega Alta del Segura,40-44,3135
+2023,Vega Alta del Segura,45-49,3099
+2023,Vega Alta del Segura,5-9,2966
+2023,Vega Alta del Segura,50-54,2921
+2023,Vega Alta del Segura,55-59,2579
+2023,Vega Alta del Segura,60-64,1943
+2023,Vega Alta del Segura,65-69,1357
+2023,Vega Alta del Segura,70-74,1158
+2023,Vega Alta del Segura,75-79,1062
+2023,Vega Alta del Segura,80-84,757
+2023,Vega Alta del Segura,85-89,567
+2023,Vega Alta del Segura,90-94,267
+2023,Vega Alta del Segura,95+,66
+2023,Vega Media del Segura,0-4,9710
+2023,Vega Media del Segura,10-14,7268
+2023,Vega Media del Segura,15-19,7590
+2023,Vega Media del Segura,20-24,8284
+2023,Vega Media del Segura,25-29,7492
+2023,Vega Media del Segura,30-34,7993
+2023,Vega Media del Segura,35-39,8199
+2023,Vega Media del Segura,40-44,9426
+2023,Vega Media del Segura,45-49,8839
+2023,Vega Media del Segura,5-9,9264
+2023,Vega Media del Segura,50-54,8026
+2023,Vega Media del Segura,55-59,7068
+2023,Vega Media del Segura,60-64,5383
+2023,Vega Media del Segura,65-69,3960
+2023,Vega Media del Segura,70-74,3174
+2023,Vega Media del Segura,75-79,2833
+2023,Vega Media del Segura,80-84,2022
+2023,Vega Media del Segura,85-89,1464
+2023,Vega Media del Segura,90-94,666
+2023,Vega Media del Segura,95+,180

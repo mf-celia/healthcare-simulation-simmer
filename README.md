@@ -20,7 +20,7 @@ The simulation is built using the `simmer` package in R, incorporating realistic
 ├── data/
 │   ├── Raw and processed datasets: population, consultations, professionals, etc.
 │   └── Derived input files for simulation (arrival tables, capacities, durations)
-├── scripts/ _(to be generated)_
+├── scripts/
 │   ├── 01_data_cleaning.R      # ETL and harmonization of health data
 │   ├── 02_arrival_generation.R # Generates synthetic arrival schedules per center
 │   ├── 03_simulation.R         # Core simulation logic using simmer
@@ -34,19 +34,14 @@ The simulation is built using the `simmer` package in R, incorporating realistic
 
 ```
 
-
 ## **Requirements**
 - R version ≥ 4.3.0
 - Required packages:
-  - `tidyverse`
-  - `simmer`
-  - `simmer.plot`
-  - `lubridate`
-  - `janitor`
-  - `stringr`
-  - `purrr`
+  - `tidyverse` (includes `dplyr`, `stringr`, `purrr`, `readr`, `ggplot2`, etc.)
+  - `simmer` and `simmer.plot`
   - `readxl`
-  - `ggplot2`
+  - `rvest`
+  - `httr`
 
 ## **Author**
 Celia Muñoz Fernández
