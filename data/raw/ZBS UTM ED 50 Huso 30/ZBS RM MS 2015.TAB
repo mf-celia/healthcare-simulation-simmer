@@ -1,0 +1,33 @@
+!table
+!version 300
+!charset WindowsLatin1
+
+Definition Table
+  Type NATIVE Charset "WindowsLatin1"
+  Fields 21
+    Area_Salud Char (10) ;
+    AS_Descrip Char (60) ;
+    Hosp_Ref Char (80) ;
+    ZB_Salud Char (10) ;
+    ZBS_Descri Char (100) ;
+    Mapa_San Char (10) ;
+    CodMunic Char (10) ;
+    CodMunic00 Char (10) ;
+    CodMunic01 Char (10) ;
+    CodMunic02 Char (10) ;
+    CodMunic03 Char (10) ;
+    Municipio Char (30) ;
+    Municip00 Char (30) ;
+    Municip01 Char (30) ;
+    Municip02 Char (30) ;
+    Municip03 Char (30) ;
+    Pob_Padron Integer ;
+    Pob_TIS Integer ;
+    Pob_a Integer ;
+    Observacio Char (254) ;
+    URL_fuente Char (254) ;
+begin_metadata
+"\IsReadOnly" = "FALSE"
+"\MapInfo" = ""
+"\MapInfo\TableID" = "3a96232d-a22c-4a1c-83c5-0583811d101c"
+end_metadata
