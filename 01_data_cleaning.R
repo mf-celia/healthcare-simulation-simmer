@@ -25,10 +25,6 @@ UA <- paste(
   "Chrome/124.0 Safari/537.36"
 )
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
 # Getting list of primary care centers for a given health area
 get_centers <- function(area_id) {
   area_url <- sprintf(
@@ -72,12 +68,9 @@ scrape_professionals <- function(area_id, center_url) {
     httr::timeout(10)
   ) |> read_html()
   
-<<<<<<< HEAD
   # Extract ZBS information
   zbs <- extract_zbs(page)
   
-=======
->>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
   # Trying to locate the professionals table
   tbl <- html_element(page, "table#lista_profesionales")
   if (is.na(tbl)) return(tibble())  # no table present at this center
@@ -95,21 +88,14 @@ scrape_professionals <- function(area_id, center_url) {
     mutate(
       area_id    = area_id,
       center_id  = as.numeric(str_extract(center_url, "(?<=id_centro=)\\d+")),
-<<<<<<< HEAD
       center_url = center_url,
       zbs        = zbs  
     ) |>
     dplyr::select(area_id, center_id, zbs, center_url, everything())  # reorder columns
-=======
-      center_url = center_url
-    ) |>
-    dplyr::select(area_id, center_id, center_url, everything())  # reorder columns
->>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
   
   return(df)
 }
 
-<<<<<<< HEAD
 # Helper function to extract ZBS from the page
 extract_zbs <- function(page) {
   # Getting all text content from the page
@@ -127,8 +113,6 @@ extract_zbs <- function(page) {
 }
 
 
-=======
->>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
 # Loop over all areas to retrieve professionals from each center
 areas <- 1:9
 professionals_scrap <- tibble()

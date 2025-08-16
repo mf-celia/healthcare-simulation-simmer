@@ -10,7 +10,7 @@ processed_data_path <- "./data/processed"
 
 # 1. Loading simulation results ------------------------------------------------
 
-#source("04_simulation.R")
+source("./04_simulation.R")
 
 
 # 2. Processing simulation results ----------------------------------------
