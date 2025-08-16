@@ -210,6 +210,7 @@ professionals_week_hours <- professionals_scrap |>
       area_id == 9 ~ "Vega Alta del Segura"
     )
   ) |> 
+<<<<<<< HEAD
   filter(!is.na(professional_type)) |>  # Quitar el filtro de cupo
   
   # Creating cupo variable
@@ -223,11 +224,18 @@ professionals_week_hours <- professionals_scrap |>
   
   # Filtrar solo profesionales con cupo
   filter(has_cupo) |> 
+=======
+  filter(!is.na(professional_type)) |> 
+>>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
   
   # Estimating weekly hours from schedule strings
   mutate(week_hours = week_hours(schedule)) |> 
   
+<<<<<<< HEAD
   # Imputing missing or invalid hours with center-level mean
+=======
+  # Imputeing missing or invalid hours with center-level mean
+>>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
   group_by(center_id) |> 
   mutate(
     mean_center = mean(week_hours[week_hours > 0], na.rm = TRUE),
@@ -243,16 +251,27 @@ professionals_week_hours <- professionals_scrap |>
   ) |> 
   ungroup()
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
 ### Professionals – Aggregated hours and weights by center ----
 
 professionals_center_weights <- professionals_week_hours |> 
   # Aggregating total weekly hours by area, center and professional type
+<<<<<<< HEAD
   group_by(area, zbs, center_id, professional_type) |> 
   summarise(total_hours = sum(week_hours), .groups = "drop") |> 
   
   # Computing total hours per area and professional type
   group_by(area, zbs, professional_type) |> 
+=======
+  group_by(area, center_id, professional_type) |> 
+  summarise(total_hours = sum(week_hours), .groups = "drop") |> 
+  
+  # Computing total hours per area and professional type
+  group_by(area, professional_type) |> 
+>>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
   mutate(total_area_hours = sum(total_hours)) |> 
   ungroup() |> 
   
@@ -347,6 +366,11 @@ arrivals <- bind_rows(
   ord_consultations_center,
   emerg_consultations_center
 ) |> 
+<<<<<<< HEAD
+=======
+  filter(year == 2023) |> 
+  
+>>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
   # For each consultation row, generate individual patients
   rowwise() %>%
   mutate(
@@ -366,7 +390,11 @@ arrivals <- bind_rows(
   
   # Ordering and assign unique ID
   arrange(year, area, center_id, arrival_time) |> 
+<<<<<<< HEAD
   mutate(pid = row_number())
+=======
+  mutate(id = row_number())
+>>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
 
 # Saving to processed folder
 write_csv(arrivals, file.path(processed_data_path, "arrivals.csv"))
