@@ -12,10 +12,10 @@ library(purrr)          # Functional programming
 library(stringr)        # String operations
 library(readr)          # Reading text files
 library(readxl)         # Reading Excel files
-library(progress)       # Progress bar (optional)
 
 
 # 1. Web scraping from murciasalud.es  ------------------------------------
+
 
 # Defining the base URL and user agent for web scraping
 BASE_URL <- "https://www.murciasalud.es/"
@@ -24,6 +24,7 @@ UA <- paste(
   "AppleWebKit/537.36 (KHTML, like Gecko)",
   "Chrome/124.0 Safari/537.36"
 )
+
 
 # Getting list of primary care centers for a given health area
 get_centers <- function(area_id) {
@@ -68,9 +69,6 @@ scrape_professionals <- function(area_id, center_url) {
     httr::timeout(10)
   ) |> read_html()
   
-  # Extract ZBS information
-  zbs <- extract_zbs(page)
-  
   # Trying to locate the professionals table
   tbl <- html_element(page, "table#lista_profesionales")
   if (is.na(tbl)) return(tibble())  # no table present at this center
@@ -88,30 +86,12 @@ scrape_professionals <- function(area_id, center_url) {
     mutate(
       area_id    = area_id,
       center_id  = as.numeric(str_extract(center_url, "(?<=id_centro=)\\d+")),
-      center_url = center_url,
-      zbs        = zbs  
+      center_url = center_url
     ) |>
-    dplyr::select(area_id, center_id, zbs, center_url, everything())  # reorder columns
+    dplyr::select(area_id, center_id, center_url, everything())  # reorder columns
   
   return(df)
 }
-
-# Helper function to extract ZBS from the page
-extract_zbs <- function(page) {
-  # Getting all text content from the page
-  all_text <- html_text(page, trim = TRUE)
-  
-  # Extracting text following "Zona básica de salud:"
-  zbs <- str_extract(all_text, "(?<=Zona básica de salud:)\\s*(.+?)(?=\\s*Área de Salud|$)")
-  
-  # Clean up the extracted ZBS
-  if (!is.na(zbs)) {
-    zbs <- str_squish(zbs)
-  }
-  
-  return(zbs)
-}
-
 
 # Loop over all areas to retrieve professionals from each center
 areas <- 1:9

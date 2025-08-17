@@ -210,19 +210,19 @@ professionals_week_hours <- professionals_scrap |>
       area_id == 9 ~ "Vega Alta del Segura"
     )
   ) |> 
-  filter(!is.na(professional_type)) |>  # Quitar el filtro de cupo
+  filter(!is.na(professional_type)) |>
   
   # Creating cupo variable
   mutate(
     has_cupo = case_when(
-      str_detect(extra_info, "Cupo") ~ TRUE,  # 
-      is.na(extra_info) | extra_info == "" ~ runif(n()) <= 0.8,  # Considering 80% professionals attending patients
-      TRUE ~ FALSE  
+      str_detect(extra_info, "Cupo") ~ TRUE,  
+      is.na(extra_info) & area_id == 2 ~ TRUE, 
+      is.na(extra_info) & area_id == 8 ~ TRUE,
+      TRUE ~ FALSE
     )
   ) |> 
   
-  # Filtrar solo profesionales con cupo
-  filter(has_cupo) |> 
+  filter(has_cupo == TRUE) |> 
   
   # Estimating weekly hours from schedule strings
   mutate(week_hours = week_hours(schedule)) |> 
@@ -248,11 +248,11 @@ professionals_week_hours <- professionals_scrap |>
 
 professionals_center_weights <- professionals_week_hours |> 
   # Aggregating total weekly hours by area, center and professional type
-  group_by(area, zbs, center_id, professional_type) |> 
+  group_by(area, center_id, professional_type) |> 
   summarise(total_hours = sum(week_hours), .groups = "drop") |> 
   
   # Computing total hours per area and professional type
-  group_by(area, zbs, professional_type) |> 
+  group_by(area, professional_type) |> 
   mutate(total_area_hours = sum(total_hours)) |> 
   ungroup() |> 
   
