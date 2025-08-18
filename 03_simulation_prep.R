@@ -41,14 +41,14 @@ list_data <- obtain_data(raw_data_path)
 ## Population ----
 
 # Cleaning and harmonising population data
-population <- list_data[["pob-asignada-siap"]] %>% 
+population <- list_data[["pob-asignada-siap"]] |> 
   rename(
     year = AÒo,                         # Year of observation
     area = "¡rea de salud",             # Health area name
     age_group = "Grupos Quinquenales",  # Age group (quinquennial)
     sex = Sexo,                         # Sex (coded)
     population = "N˙mero"               # Population count
-  ) %>%
+  ) |>
   mutate(
     # Cleaning area names by removing prefix like "Area I: ..."
     area = str_sub(area, str_locate(area, ":")[1] + 2, str_length(area)),
@@ -63,7 +63,7 @@ population <- list_data[["pob-asignada-siap"]] %>%
     
     # Recoding sex to numeric: 1 = Male, 2 = Female
     sex = if_else(sex == "VarÛn", 0, 1)
-  ) %>%
+  ) |>
   dplyr::select(year, area, age_group, sex, population)
 
 # Saving processed population data
@@ -72,7 +72,7 @@ write_csv(population, file.path(processed_data_path, "population.csv"))
 ## Consultations ----
 
 # Loading and cleaning primary care consultation records from SIAP
-consultations <- list_data[["visitas-siap"]] %>%
+consultations <- list_data[["visitas-siap"]] |>
   rename(
     year = AÒo,                         # Year of observation
     area = "¡rea de salud",             # Health area name
@@ -80,7 +80,7 @@ consultations <- list_data[["visitas-siap"]] %>%
     professional_type = Profesional,    # Professional type (GP, pediatrician, nurse)
     modality = Lugar,                   # Place/type of consultation (center, home, teleconsultation)
     n_consultations = Consultas         # Number of consultations
-  ) %>%
+  ) |>
   mutate(
     # Cleaning area names (remove prefix "Área X: ")
     area = str_remove(area, "^[^:]+: "),
@@ -107,10 +107,10 @@ consultations <- list_data[["visitas-siap"]] %>%
                       "Centro" = "In-person",        
                       "Teleconsulta" = "Remote",  
                       "Domicilio" = "Home")     
-  ) %>%
+  ) |>
   filter(!is.na(professional_type),
-         !is.na(age_group)) %>%
-  dplyr::select(year, area, age_group, professional_type, modality, n_consultations) %>%
+         !is.na(age_group)) |>
+  dplyr::select(year, area, age_group, professional_type, modality, n_consultations) |>
   
   # Fill in all missing combinations with 0 consultations
   complete(year, area, age_group, professional_type, modality,
@@ -122,13 +122,13 @@ write_csv(consultations, file.path(processed_data_path, "consultations.csv"))
 ## Emergencies ----
 
 # Loading and cleaning primary care emergency consultations
-emergencies <- list_data[["urgencias-siap"]] %>%
+emergencies <- list_data[["urgencias-siap"]] |>
   rename(
     year = AÒo,                         # Year of observation
     area = "¡rea de salud",             # Health area name
     age_group = "Grupos Quinquenales",  # Age group (quinquennial)
     n_emerg = "Atendidas por Medicina"  # Number of emergencies
-  ) %>%
+  ) |>
   mutate(
     # Cleaning area names (remove prefix "Área X: ")
     area = str_remove(area, "^[^:]+: "),
@@ -143,9 +143,9 @@ emergencies <- list_data[["urgencias-siap"]] %>%
     ),
     
     n_emerg = as.numeric(n_emerg)
-  ) %>%
-  filter(!is.na(age_group)) %>%
-  dplyr::select(year, area, age_group, n_emerg) %>%
+  ) |>
+  filter(!is.na(age_group)) |>
+  dplyr::select(year, area, age_group, n_emerg) |>
   
   # Fill in all missing combinations with 0 consultations
   complete(year, area, age_group,
@@ -159,13 +159,13 @@ write_csv(emergencies, file.path(processed_data_path, "emergencies.csv"))
 
 # Loading and cleaning data on the number of primary care centers by area and type
 
-primary_care_centers <- list_data[["centros-siap"]] %>%
+primary_care_centers <- list_data[["centros-siap"]] |>
   rename(
     year = AÒo,                           # Year of observation
     area = "¡rea de salud",               # Health area name
     center_type = "Tipo de centro",       # Type of center (health center or local clinic)
     n_centers = "N∫ de centros"           # Number of centers
-  ) %>%
+  ) |>
   mutate(
     # Cleaning area names (remove prefix like "Área X: ")
     area = str_remove(area, "^[^:]+: "),
@@ -177,7 +177,7 @@ primary_care_centers <- list_data[["centros-siap"]] %>%
     center_type = recode(center_type,
                          "Centros de salud" = 1,      # Health center
                          "Consultorios locales" = 2) # Local clinic
-  ) %>%
+  ) |>
   dplyr::select(year, area, center_type, n_centers)
 
 primary_care_centers |> 
@@ -286,15 +286,15 @@ ord_consultations_center <- consultations |>
   mutate(
     day_consultations = round(n_consultations / 250),
     priority = 1  # Regular priority
-  ) %>%
+  ) |>
   
   # Merging with professional center weights
-  left_join(professionals_center_weights, by = c("area", "professional_type")) %>%
+  left_join(professionals_center_weights, by = c("area", "professional_type")) |>
   
   # Distributing consultations to each center by weight
   mutate(
     day_consultations_center = round(day_consultations * weight)
-  ) %>%
+  ) |>
   
   # Removing zero or missing values
   filter(day_consultations_center > 0 & !is.na(day_consultations_center))
@@ -348,7 +348,7 @@ arrivals <- bind_rows(
   emerg_consultations_center
 ) |> 
   # For each consultation row, generate individual patients
-  rowwise() %>%
+  rowwise() |>
   mutate(
     arrival_time = list(sort(runif(day_consultations_center, 0, 420))),  # 7h = 420 min
     age = list(floor(map_dbl(seq_len(day_consultations_center), ~ random_age(age_group)))),
@@ -359,9 +359,9 @@ arrivals <- bind_rows(
     center_id = list(rep(as.numeric(center_id), day_consultations_center)),
     modality = list(rep(modality, day_consultations_center)),
     priority = list(rep(priority, day_consultations_center))
-  ) %>%
+  ) |>
   # Flattening the lists into individual rows
-  unnest(c(year, area, center_id, arrival_time, priority, modality, professional_type, age, age_group)) %>%
+  unnest(c(year, area, center_id, arrival_time, priority, modality, professional_type, age, age_group)) |>
   ungroup() |> 
   
   # Ordering and assign unique ID

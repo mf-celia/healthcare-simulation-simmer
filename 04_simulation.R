@@ -40,8 +40,8 @@ drain_days    <- 10L
 
 
 ## 3. Resources & global slot counters -------------------------------------
-resources_spec <- professionals_center_weights %>%
-  dplyr::select(center_id, professional_type, total_hours) %>% 
+resources_spec <- professionals_center_weights |>
+  dplyr::select(center_id, professional_type, total_hours) |> 
   mutate(
     capacity      = pmax(1, round(total_hours / 37)),  # capacity in FTE (1 FTE = 37h/week)
     resource_name = paste(center_id, professional_type, sep = "_")
@@ -68,15 +68,15 @@ make_traj_factory <- function(env, pid, year, center_id, prof_type, age, modalit
   slot_var       <- paste0("slots_", resource_name)       # daily usage counter
   slot_limit_var <- paste0("limit_", resource_name)       # daily limit per resource
   
-  trajectory(paste("traj", resource_name, sep = "_")) %>%
+  trajectory(paste("traj", resource_name, sep = "_")) |>
     # Store patient attributes for monitoring
-    set_attribute("pid",               as.numeric(pid)) %>%
-    set_attribute("year",              as.numeric(year)) %>%
-    set_attribute("center_id",         as.numeric(center_id)) %>%
-    set_attribute("modality",          as.numeric(match(modality, c("In-person","Remote","Home")))) %>%
-    set_attribute("age",               as.numeric(age)) %>%
-    set_attribute("professional_type", as.numeric(match(prof_type, c("GP","Nurse","Pediatrician")))) %>%
-    set_attribute("priority",          as.numeric(priority)) %>%
+    set_attribute("pid",               as.numeric(pid)) |>
+    set_attribute("year",              as.numeric(year)) |>
+    set_attribute("center_id",         as.numeric(center_id)) |>
+    set_attribute("modality",          as.numeric(match(modality, c("In-person","Remote","Home")))) |>
+    set_attribute("age",               as.numeric(age)) |>
+    set_attribute("professional_type", as.numeric(match(prof_type, c("GP","Nurse","Pediatrician")))) |>
+    set_attribute("priority",          as.numeric(priority)) |>
     
     # Split: urgent patients (priority 0) vs regular patients
     branch(
@@ -84,16 +84,16 @@ make_traj_factory <- function(env, pid, year, center_id, prof_type, age, modalit
       continue = c(TRUE, TRUE),
       
       # Path 1: URGENT → always attended immediately
-      trajectory("urgent_path") %>%
-        seize(resource_name, 1, priority = priority) %>%
-        simmer::timeout(function() rlnorm(1, meanlog, sdlog)) %>%
+      trajectory("urgent_path") |>
+        seize(resource_name, 1, priority = priority) |>
+        simmer::timeout(function() rlnorm(1, meanlog, sdlog)) |>
         release(resource_name, 1),
       
       # Path 2: REGULAR patients → check daily slot availability and retry if full
-      trajectory("regular_path") %>%
-        set_attribute("sim_day",       function() floor(now(env) / daily_minutes)) %>%
-        set_attribute("slots_used_in", function() get_global(env, slot_var)) %>%
-        set_attribute("daily_slots",   function() get_global(env, slot_limit_var)) %>%  # for monitoring %>%
+      trajectory("regular_path") |>
+        set_attribute("sim_day",       function() floor(now(env) / daily_minutes)) |>
+        set_attribute("slots_used_in", function() get_global(env, slot_var)) |>
+        set_attribute("daily_slots",   function() get_global(env, slot_limit_var)) |>  # for monitoring |>
         
         branch(
           option = function() {
@@ -104,8 +104,8 @@ make_traj_factory <- function(env, pid, year, center_id, prof_type, age, modalit
           continue = c(TRUE, TRUE),
           
           # 2.1 No slot available → wait 1 day and retry (with maximum retry limit)
-          trajectory("wait_retry") %>%
-            set_attribute("retries", 1, mod = "+") %>%
+          trajectory("wait_retry") |>
+            set_attribute("retries", 1, mod = "+") |>
             
             # Check if maximum retries reached
             branch(
@@ -116,22 +116,22 @@ make_traj_factory <- function(env, pid, year, center_id, prof_type, age, modalit
               continue = c(TRUE, TRUE),
               
               # 2.1.1 Maximum retries reached → patient abandons
-              trajectory("abandoned") %>%
+              trajectory("abandoned") |>
                 set_attribute("abandoned", 1),  # mark as abandoned
               
               # 2.1.2 Continue retrying
-              trajectory("continue_retry") %>%
-                simmer::timeout(daily_minutes + 0.01) %>%
+              trajectory("continue_retry") |>
+                simmer::timeout(daily_minutes + 0.01) |>
                 rollback(5, times = Inf)  # rollback to the slot availability check
             ),
           
           # 2.2 Slot available → attend
-          trajectory("attend") %>%
-            set_global(slot_var, 1, mod = "+") %>%  # reserve slot
-            set_attribute("slots_used_out", function() get_global(env, slot_var)) %>%
-            set_attribute("final_retries", function() get_attribute(env, "retries")) %>%
-            seize(resource_name, 1, priority = priority) %>%
-            simmer::timeout(function() rlnorm(1, meanlog, sdlog)) %>%
+          trajectory("attend") |>
+            set_global(slot_var, 1, mod = "+") |>  # reserve slot
+            set_attribute("slots_used_out", function() get_global(env, slot_var)) |>
+            set_attribute("final_retries", function() get_attribute(env, "retries")) |>
+            seize(resource_name, 1, priority = priority) |>
+            simmer::timeout(function() rlnorm(1, meanlog, sdlog)) |>
             release(resource_name, 1)
         )
     )
@@ -152,7 +152,7 @@ run_one_year <- function(yr, arrivals_year) {
   }
   
   # Deriving avg_mu per resource from that year's arrivals, then a fixed daily limit per resource
-  mu_by_res <- arrivals_year %>%
+  mu_by_res <- arrivals_year |>
     mutate(
       mu_patient = {
         base <- 12
@@ -163,13 +163,13 @@ run_one_year <- function(yr, arrivals_year) {
         base <- if_else(modality == "Home", base * 2, base)
         base
       }
-    ) %>%
-    group_by(center_id, professional_type) %>%
+    ) |>
+    group_by(center_id, professional_type) |>
     summarise(avg_mu = mean(mu_patient, na.rm = TRUE), .groups = "drop")
   
-  slots_limits <- resources_spec %>%
-    dplyr::select(center_id, professional_type, total_hours, resource_name) %>%
-    left_join(mu_by_res, by = c("center_id", "professional_type")) %>%
+  slots_limits <- resources_spec |>
+    dplyr::select(center_id, professional_type, total_hours, resource_name) |>
+    left_join(mu_by_res, by = c("center_id", "professional_type")) |>
     mutate(
       avg_mu = coalesce(avg_mu, 12),  # fallback if no arrivals for that resource
       slots_per_day = pmax(1, round((total_hours / 37) * daily_minutes / avg_mu))
@@ -184,7 +184,7 @@ run_one_year <- function(yr, arrivals_year) {
  
 # 5. Add resources (once per resource) ------------------------------------
   pwalk(
-    resources_spec %>% dplyr::select(center_id, professional_type, capacity),
+    resources_spec |> dplyr::select(center_id, professional_type, capacity),
     function(center_id, professional_type, capacity, ...) {
       resource_name <- paste(center_id, professional_type, sep = "_")
       env <<- add_resource(env, resource_name, capacity)
@@ -194,7 +194,7 @@ run_one_year <- function(yr, arrivals_year) {
   
 # 6. Adding patient generators using arrival data ----------------------------
   pwalk(
-    arrivals_year %>%
+    arrivals_year |>
       dplyr::select(pid, year, center_id, priority, professional_type, age, modality, arrival_time, total_hours),
     function(pid, year, center_id, priority, professional_type, age, modality, arrival_time, total_hours, ...) {
       gen_name <- sprintf("p_%d_", pid)
@@ -228,7 +228,7 @@ run_one_year <- function(yr, arrivals_year) {
     env <- add_generator(
       env,
       name_prefix = paste0("reset_", res),
-      trajectory = trajectory() %>% set_global(slot_var, 0),
+      trajectory = trajectory() |> set_global(slot_var, 0),
       distribution = at(reset_times),
       mon = 0
     )
@@ -238,13 +238,13 @@ run_one_year <- function(yr, arrivals_year) {
 # 8. Running this year's environment ---------------
 
   # Run simulation for the year
-  env %>% run(until = sim_end)
+  env |> run(until = sim_end)
   
   # Return collected monitors tagged with the year
   list(
-    attributes = get_mon_attributes(env) %>% mutate(year = yr),
-    arrivals   = get_mon_arrivals(env)   %>% mutate(year = yr),
-    resources  = get_mon_resources(env)  %>% mutate(year = yr)
+    attributes = get_mon_attributes(env) |> mutate(year = yr),
+    arrivals   = get_mon_arrivals(env)   |> mutate(year = yr),
+    resources  = get_mon_resources(env)  |> mutate(year = yr)
   )
 }
 
@@ -253,8 +253,14 @@ arrivals_list <- split(arrivals, arrivals$year)
 results_list <- imap(arrivals_list, ~ run_one_year(yr = .y, arrivals_year = .x))
 
 
-# Combine monitors into single data frames
+# Combining monitors into single data frames
 sim_attributes <- map_dfr(results_list, "attributes")
 sim_arrivals   <- map_dfr(results_list, "arrivals")
 sim_resources  <- map_dfr(results_list, "resources")
+
+# Saving simulation
+sim_resources |> write_csv("./data/processed/sim_resources.csv")
+sim_attributes |> write_csv("./data/processed/sim_attributes.csv")
+sim_arrivals |>  write_csv("./data/processed/sim_arrivals.csv")
+
 

@@ -3,27 +3,26 @@ library(tidyverse)
 library(scales)
 library(lubridate)
 library(ggplot2)
-library(sf)
 
 # Setting processed data path
 processed_data_path <- "./data/processed"
 
 # 1. Loading simulation results ------------------------------------------------
 
-source("./04_simulation.R")
+# source("./04_simulation.R")
 
 
 # 2. Processing simulation results ----------------------------------------
 
 ## Processing resource log ----
-resources <- sim_resources %>%
+resources <- sim_resources |>
   mutate(
     center_id = as.numeric(str_extract(resource, "^\\d+")),
     professional_type = str_extract(resource, "(?<=_).*")
-  ) %>%
+  ) |>
   left_join(
-    professionals_center_weights %>%
-      dplyr::select(area, zbs, center_id) %>%
+    professionals_center_weights |>
+      dplyr::select(area, center_id) |>
       distinct(),
     by = "center_id"
   ) 
@@ -32,14 +31,14 @@ write_csv(resources, file.path(processed_data_path, "resources.csv"))
 
 
 ## Processing attributes per patient ----
-patient_attributes <- sim_attributes %>%
+patient_attributes <- sim_attributes |>
   filter(!str_starts(key, "slots_"),
-         !str_starts(key, "limit_")) %>%
-  group_by(name, key) %>%
+         !str_starts(key, "limit_")) |>
+  group_by(name, key) |>
   summarise(
     value = last(na.omit(value)),
     .groups = "drop"
-  ) %>%
+  ) |>
   pivot_wider(
     names_from = key, 
     values_from = value,
@@ -47,8 +46,8 @@ patient_attributes <- sim_attributes %>%
   )
 
 ## Processing arrivals ----
-patient_arrivals <- sim_arrivals %>%
-  filter(!str_starts(name, "reset_")) %>%
+patient_arrivals <- sim_arrivals |>
+  filter(!str_starts(name, "reset_")) |>
   mutate(
     finished = !is.na(end_time),
     waiting_time = end_time - start_time - activity_time,
@@ -57,28 +56,28 @@ patient_arrivals <- sim_arrivals %>%
 
 
 ## Combining attributes and arrivals ----
-combined_patients <- sim_arrivals %>%
-  filter(!str_starts(name, "reset_")) %>%
+combined_patients <- sim_arrivals |>
+  filter(!str_starts(name, "reset_")) |>
   mutate(
     finished = !is.na(end_time),
     waiting_time = end_time - start_time - activity_time,
     patient_id = str_extract(name, "p_(\\d+)_", group = 1)
-  ) %>%
+  ) |>
   left_join(
-    patient_attributes %>% 
+    patient_attributes |> 
       dplyr::select(-year),
     by = "name"
-  ) %>%
+  ) |>
   # Adding area informatin
   left_join(professionals_center_weights |> 
-              distinct(area, zbs, center_id), 
-            by = "center_id") %>%
+              distinct(area, center_id), 
+            by = "center_id") |>
   # Cleaning duplicated columns
   dplyr::select(
-    name, start_time, end_time, activity_time, finished, waiting_time, area, zbs,
+    name, start_time, end_time, activity_time, finished, waiting_time, area,
     pid, year, center_id, modality, age, professional_type, priority,
     sim_day, daily_slots, final_retries, retries, abandoned
-  ) %>%
+  ) |>
   mutate(
     # Attributes from patients that abandoned 
     abandoned = coalesce(abandoned, 0),  
@@ -146,8 +145,8 @@ write_csv(combined_patients, file.path(processed_data_path, "combined_patients.c
 # It provides insights into how different patient categories are managed 
 # and their outcomes within the system.
 
-patient_type_analysis <- combined_patients %>%
-  group_by(area, patient_type, patient_status) %>%
+patient_type_analysis <- combined_patients |>
+  group_by(area, patient_type, patient_status) |>
   summarise(
     n = n(),
     pct = n / nrow(combined_patients) * 100,
@@ -157,7 +156,8 @@ patient_type_analysis <- combined_patients %>%
   )
 
 
-p_patient_type_analysis <- patient_type_analysis %>%
+
+p_patient_type_analysis <- patient_type_analysis |>
   ggplot(aes(x = patient_type, y = area, fill = pct)) +
   geom_tile(color = "white", linewidth = 0.5) +
   geom_text(aes(label = sprintf("%.1f%%", pct)), 
@@ -184,8 +184,8 @@ ggsave("./figs/p_patient_type_analysis.png", p_patient_type_analysis)
 # across healthcare areas and patient statuses. It helps identify which modalities 
 # are most effective.
 
-modality_analysis <- combined_patients %>%
-  group_by(area, modality_label, patient_status) %>%
+modality_analysis <- combined_patients |>
+  group_by(area, modality_label, patient_status) |>
   summarise(
     n = n(),
     pct = n / nrow(combined_patients) * 100,
@@ -194,8 +194,20 @@ modality_analysis <- combined_patients %>%
     .groups = "drop"
   )
 
+modality_status_analysis <- combined_patients |>
+  group_by(modality_label, patient_status) |>
+  summarise(
+    n = n(),
+    .groups = "drop"
+  ) |>
+  group_by(modality_label) |>
+  mutate(
+    total_modality = sum(n),
+    pct = n / total_modality * 100
+  ) |>
+  filter(patient_status == "Completed")
 
-p_modality_analysis <- modality_analysis %>%
+p_modality_analysis <- modality_analysis |>
   ggplot(aes(x = area, y = n, fill = modality_label)) +
   geom_col(position = "stack") +
   facet_wrap(~patient_status, scales = "free_y") +
@@ -224,9 +236,9 @@ ggsave("./figs/p_modality_analysis.png", p_modality_analysis)
 # It identifies centers and professional types that are operating beyond capacity, 
 # leading to high abandonment rates.
 
-capacity_demand_analysis <- combined_patients %>%
-  filter(!is.na(daily_slots)) %>%  # Just regular patients
-  group_by(area, professional_type_label) %>%
+capacity_demand_analysis <- combined_patients |>
+  filter(!is.na(daily_slots)) |>  # Just regular patients
+  group_by(area, professional_type_label) |>
   summarise(
     total_patients = n(),
     completed = sum(patient_status == "Completed"),
@@ -236,30 +248,30 @@ capacity_demand_analysis <- combined_patients %>%
     completion_rate = completed / total_patients,
     abandonment_rate = abandoned / total_patients,
     .groups = "drop"
-  ) %>%
+  ) |>
   arrange(desc(completion_rate))
 
 
-t_capacity_demand_analysis <- capacity_demand_analysis %>%
-  group_by(area) %>%
+t_capacity_demand_analysis <- capacity_demand_analysis |>
+  group_by(area) |>
   summarise(
     avg_completion_rate = mean(completion_rate, na.rm = TRUE),
     avg_abandonment_rate = mean(abandonment_rate, na.rm = TRUE),
     total_patients = sum(total_patients),
     .groups = "drop"
-  ) %>%
-  arrange(desc(avg_completion_rate)) %>%
+  ) |>
+  arrange(desc(avg_completion_rate)) |>
   mutate(
     across(c(avg_completion_rate, avg_abandonment_rate), 
            ~sprintf("%.1f%%", .x * 100))
-  ) %>%
+  ) |>
   knitr::kable(
     col.names = c("Area", "Avg Completion Rate", "Avg Abandonment Rate", "Total Patients"),
     caption = "Area Performance Ranking by Completion Rate"
   )
 
 
-p_capacity_demand_analysis <- capacity_demand_analysis %>%
+p_capacity_demand_analysis <- capacity_demand_analysis |>
   ggplot(aes(x = area, y = completion_rate, fill = professional_type_label)) +
   geom_col(position = "dodge", width = 0.7) +
   scale_fill_manual(
@@ -292,27 +304,27 @@ ggsave("./figs/p_capacity_demand_analysis.png", p_capacity_demand_analysis)
 # Calculates abandonment rate for each group, compares each group's rate to the area average 
 # and normalises differences 
 
-access_equity <- combined_patients %>%
-  group_by(area, age_group, professional_type_label) %>%
+access_equity <- combined_patients |>
+  group_by(area, age_group, professional_type_label) |>
   summarise(
     n = n(),
     pct_abandoned = mean(patient_status == "Abandoned"),
     pct_completed = mean(patient_status == "Completed"),
     mean_retries = mean(retries, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  group_by(area) %>%
+  ) |>
+  group_by(area) |>
   mutate(
     equity_score = 1 - abs(pct_abandoned - mean(pct_abandoned)) / mean(pct_abandoned)
   )
 
-p_access_equity <- access_equity %>%
-  group_by(area) %>%
+p_access_equity <- access_equity |>
+  group_by(area) |>
   summarise(
     mean_equity = mean(equity_score, na.rm = TRUE),
     sd_equity = sd(equity_score, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   ggplot(aes(x = reorder(area, mean_equity), y = mean_equity)) +
   geom_col(fill = "#1f77b4", alpha = 0.8) +
   geom_errorbar(aes(ymin = mean_equity - sd_equity, ymax = mean_equity + sd_equity), 
@@ -342,7 +354,7 @@ ggsave("./figs/p_access_equity.png", p_access_equity)
 # who successfully complete their consultations vs. those who abandon the system 
 # or remain in waiting. Primary indicator of overall system effectiveness.
 
-kpi_summary <- combined_patients %>%
+kpi_summary <- combined_patients |>
   summarise(
     total_patients = n(),
     completed = sum(patient_status == "Completed"),
@@ -354,25 +366,25 @@ kpi_summary <- combined_patients %>%
   )
 
 
-t_kpi_summary <- kpi_summary %>%
+t_kpi_summary <- kpi_summary |>
   mutate(
     across(c(pct_completed, pct_abandoned, pct_in_progress), 
            ~sprintf("%.1f%%", .x * 100))
-  ) %>%
+  ) |>
   knitr::kable(
     col.names = c("Total patients", "Completed", "Abandoned", "In progress", 
                   "% Completed", "% Abandoned", "% In progress"),
     caption = "Overall system performance summary"
   )
 
-p_kpi_summary <- kpi_summary %>%
+p_kpi_summary <- kpi_summary |>
   pivot_longer(cols = c(pct_completed, pct_abandoned, pct_in_progress),
-               names_to = "metric", values_to = "percentage") %>%
+               names_to = "metric", values_to = "percentage") |>
   mutate(metric = case_when(
     metric == "pct_completed" ~ "Completed",
     metric == "pct_abandoned" ~ "Abandoned", 
     metric == "pct_in_progress" ~ "In Progress"
-  )) %>%
+  )) |>
   ggplot(aes(x = metric, y = percentage, fill = metric)) +
   geom_col(width = 0.6) +
   geom_text(aes(label = sprintf("%.1f%%", percentage * 100)), 
@@ -396,8 +408,8 @@ p_kpi_summary <- kpi_summary %>%
 ggsave("./figs/p_kpi_summary.png", p_kpi_summary)
 
 
-kpi_summary_temporal <- combined_patients %>%
-  group_by(year) %>%
+kpi_summary_temporal <- combined_patients |>
+  group_by(year) |>
   summarise(
     total_patients = n(),
     completed = sum(patient_status == "Completed"),
@@ -410,8 +422,8 @@ kpi_summary_temporal <- combined_patients %>%
   )
 
 # Temporal trends analysis
-temporal_trends <- combined_patients %>%
-  group_by(year, area) %>%
+temporal_trends <- combined_patients |>
+  group_by(year, area) |>
   summarise(
     total_patients = n(),
     completion_rate = mean(patient_status == "Completed"),
@@ -419,15 +431,15 @@ temporal_trends <- combined_patients %>%
     mean_waiting_time = mean(waiting_time, na.rm = TRUE),
     mean_retries = mean(retries, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  group_by(area) %>%
+  ) |>
+  group_by(area) |>
   mutate(
     completion_trend = (completion_rate - lag(completion_rate)) / lag(completion_rate) * 100,
     abandonment_trend = (abandonment_rate - lag(abandonment_rate)) / lag(abandonment_rate) * 100
   )
 
 
-p_temporal_trends <- temporal_trends %>%
+p_temporal_trends <- temporal_trends |>
   ggplot(aes(x = year, y = completion_rate, color = area, group = area)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 3) +
@@ -448,8 +460,8 @@ ggsave("./figs/p_temporal_trends.png", p_temporal_trends)
 
 
 # Year-over-year comparison
-year_comparison <- combined_patients %>%
-  group_by(year) %>%
+year_comparison <- combined_patients |>
+  group_by(year) |>
   summarise(
     total_patients = n(),
     completion_rate = mean(patient_status == "Completed"),
@@ -459,7 +471,7 @@ year_comparison <- combined_patients %>%
     urgent_ratio = mean(patient_type == "Urgent"),
     remote_ratio = mean(modality_label == "Remote"),
     .groups = "drop"
-  ) %>%
+  ) |>
   mutate(
     completion_change = (completion_rate - lag(completion_rate)) / lag(completion_rate) * 100,
     abandonment_change = (abandonment_rate - lag(abandonment_rate)) / lag(abandonment_rate) * 100
@@ -474,15 +486,15 @@ year_comparison <- combined_patients %>%
 # How many attempts patients make before either successfully obtaining an appointment 
 # or abandoning the system. 
 
-retry_distribution <- combined_patients %>%
-  count(retries) %>%
+retry_distribution <- combined_patients |>
+  count(retries) |>
   mutate(
     pct = n / sum(n),
     cumulative_pct = cumsum(pct)
   )
 
 
-p_retry_distribution <- retry_distribution %>%
+p_retry_distribution <- retry_distribution |>
   ggplot(aes(x = retries, y = pct)) +
   geom_col(fill = "#1f77b4", alpha = 0.8) +
   geom_line(aes(y = cumulative_pct), color = "#ff7f0e", linewidth = 1.5) +
@@ -516,8 +528,8 @@ ggsave("./figs/p_retry_distribution.png", p_retry_distribution)
 # of completing or abandoning care. It helps identify age-specific patterns 
 # that might require targeted interventions or adjustments.
 
-retries_age <- combined_patients %>%
-  group_by(age_group) %>%
+retries_age <- combined_patients |>
+  group_by(age_group) |>
   summarise(
     n = n(),
     mean_retries = mean(retries, na.rm = TRUE),
@@ -534,8 +546,8 @@ retries_age <- combined_patients %>%
 # the highest average retry attempts, indicating potential capacity constraints or 
 # inefficiencies in service delivery.
 
-retry_burden <- combined_patients %>%
-  group_by(area, center_id, professional_type_label) %>%
+retry_burden <- combined_patients |>
+  group_by(area, center_id, professional_type_label) |>
   summarise(
     mean_retries = mean(retries, na.rm = TRUE),
     pct_abandoned = mean(patient_status == "Abandoned"),
@@ -543,9 +555,26 @@ retry_burden <- combined_patients %>%
     n_patients = n(),
     max_retries = max(retries, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   arrange(desc(mean_retries))
 
+p_retry_burden <- retry_burden |>
+  slice_max(mean_retries, n = 15) |>
+  ggplot(aes(x = reorder(paste(area, center_id, professional_type_label), mean_retries), 
+             y = mean_retries, fill = area)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_viridis_d(name = "Healthcare area", option = "plasma") +
+  labs(
+    title = "Retry burden by area and professional type",
+    subtitle = "Average number of retry attempts before successful appointment",
+    x = "Center and professional type", y = "Mean retries"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.title = element_text(size = 14, face = "bold")
+  )
 
 ## Resource utilisation ----
 
@@ -553,20 +582,20 @@ retry_burden <- combined_patients %>%
 # across different areas and professional types. It helps identify underutilised resources 
 # and areas where additional capacity might be needed.
 
-resource_utilisation <- resources %>%
-  mutate(utilisation = server / capacity) %>%
-  group_by(area, professional_type) %>%
+resource_utilisation <- resources |>
+  mutate(utilisation = server / capacity) |>
+  group_by(area, professional_type) |>
   summarise(
     avg_utilisation = mean(utilisation, na.rm = TRUE),
     max_utilisation = max(utilisation, na.rm = TRUE),
     p95_utilisation = quantile(utilisation, probs = 0.95, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   arrange(desc(avg_utilisation))
 
 
-p_resource_utilisation <- resource_utilisation %>%
-  mutate(area = factor(area, levels = unique(area))) %>%
+p_resource_utilisation <- resource_utilisation |>
+  mutate(area = factor(area, levels = unique(area))) |>
   ggplot(aes(x = professional_type, y = area, fill = avg_utilisation)) +
   geom_tile(color = "white", linewidth = 0.5) +
   geom_text(aes(label = sprintf("%.1f%%", avg_utilisation * 100)), 
@@ -593,22 +622,22 @@ ggsave("./figs/p_resource_utilisation.png", p_resource_utilisation)
 # This analysis tracks how patient load accumulates over simulation days and 
 # identifies periods of peak congestion.
 
-temporal_congestion <- combined_patients %>%
-  filter(!is.na(sim_day)) %>%
-  group_by(sim_day, area) %>%
+temporal_congestion <- combined_patients |>
+  filter(!is.na(sim_day)) |>
+  group_by(sim_day, area) |>
   summarise(
     total_patients = n(),
     new_arrivals = sum(sim_day == 0),  
     cumulative_patients = cumsum(total_patients),
     abandoned_today = sum(patient_status == "Abandoned" & sim_day == 0),
     .groups = "drop"
-  ) %>%
+  ) |>
   mutate(
     congestion_index = cumulative_patients / total_patients,
     daily_abandonment_rate = abandoned_today / new_arrivals
   )
 
-p_temporal_congestion <- temporal_congestion %>%
+p_temporal_congestion <- temporal_congestion |>
   ggplot(aes(x = sim_day, y = congestion_index, color = area)) +
   geom_line(linewidth = 1.2) +
   geom_point(size = 2) +
@@ -633,15 +662,15 @@ ggsave("./figs/p_temporal_congestion.png", p_temporal_congestion)
 # How demand varies across different modalities, age groups, and areas. 
 # It helps identify high-risk combinations that lead to increased abandonment rates
 
-demand_patterns <- combined_patients %>%
-  group_by(area, modality_label, age_group) %>%
+demand_patterns <- combined_patients |>
+  group_by(area, modality_label, age_group) |>
   summarise(
     n = n(),
     pct_abandoned = mean(patient_status == "Abandoned"),
     mean_retries = mean(retries, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  group_by(area) %>%
+  ) |>
+  group_by(area) |>
   mutate(
     demand_intensity = n / sum(n),
     risk_score = pct_abandoned * mean_retries
@@ -658,8 +687,8 @@ demand_patterns <- combined_patients %>%
 # total system effort (patients + retry attempts) in the denominator
 # It Identifies centers/professionals that need process optimisation
 
-operational_efficiency <- combined_patients %>%
-  group_by(area, professional_type_label) %>%
+operational_efficiency <- combined_patients |>
+  group_by(area, professional_type_label) |>
   summarise(
     total_patients = n(),
     urgent_patients = sum(patient_type == "Urgent"),
@@ -668,7 +697,7 @@ operational_efficiency <- combined_patients %>%
     abandoned = sum(patient_status == "Abandoned"),
     total_retries = sum(retries, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   mutate(
     efficiency_score = completed / (total_patients + total_retries),
     urgent_ratio = urgent_patients / total_patients,
@@ -676,7 +705,7 @@ operational_efficiency <- combined_patients %>%
   )
 
 
-p_operational_efficiency <- operational_efficiency %>%
+p_operational_efficiency <- operational_efficiency |>
   ggplot(aes(x = area, y = efficiency_score, fill = professional_type_label)) +
   geom_col(position = "dodge", width = 0.7) +
   geom_text(aes(label = sprintf("%.2f", efficiency_score)), 
@@ -707,23 +736,23 @@ ggsave("./figs/p_operational_efficiency.png", p_operational_efficiency)
 # This analysis identifies specific centers and professional types that create 
 # the most significant bottlenecks in the system. 
 
-bottleneck_analysis <- combined_patients %>%
-  filter(patient_status == "Abandoned") %>%
-  group_by(area, center_id, professional_type_label) %>%
+bottleneck_analysis <- combined_patients |>
+  filter(patient_status == "Abandoned") |>
+  group_by(area, center_id, professional_type_label) |>
   summarise(
     n_abandoned = n(),
     avg_retries_before_abandonment = mean(retries, na.rm = TRUE),
     max_retries_before_abandonment = max(retries, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
+  ) |>
   mutate(
     bottleneck_severity = n_abandoned * avg_retries_before_abandonment
-  ) %>%
+  ) |>
   arrange(desc(bottleneck_severity))
 
 
-p_bottleneck_analysis <- bottleneck_analysis %>%
-  slice_max(bottleneck_severity, n = 10) %>%
+p_bottleneck_analysis <- bottleneck_analysis |>
+  slice_max(bottleneck_severity, n = 10) |>
   ggplot(aes(x = reorder(paste(area, center_id, professional_type_label), bottleneck_severity), 
              y = bottleneck_severity, fill = area)) +
   geom_col() +
