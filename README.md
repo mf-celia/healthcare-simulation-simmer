@@ -44,13 +44,6 @@ The simulation is built using the `simmer` package in R, incorporating realistic
   - `httr`
 
 ## **Author**
-<<<<<<< HEAD
 Celia Muñoz Fernández  
 Master in Computational Social Science  
-=======
-Celia Muñoz Fernández
-
-Master in Computational Social Science
-
->>>>>>> 44b9ba7cadf5d19685db2d2dd1c55ec22c5ba978
 UC3M
